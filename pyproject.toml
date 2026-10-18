@@ -1,0 +1,69 @@
+[project]
+name = "agentmemeval"
+version = "0.1.0"
+description = "Evaluation framework for AI memory systems and tool-calling agents, with calibrated judges and failure attribution."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Black-XZ", email = "Black-XZ@users.noreply.github.com" }
+]
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+# Real LLM / memory-service calls. Only used behind the `live` marker / `--live`.
+live = [
+    "openai>=1.0",
+    "mem0ai>=0.1",
+]
+# Fetching the public EverMemBench dataset (scripts/download_data.py).
+data = [
+    "huggingface-hub>=0.24",
+]
+
+[project.scripts]
+agentmemeval = "agentmemeval.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "allure-pytest>=2.13",
+    "ruff>=0.6",
+    "pre-commit>=3.7",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.26,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = ["--strict-markers", "--strict-config", "-ra"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "unit: pure functions and components, offline",
+    "agent: agent-layer evaluation cases driven by ScriptedLLM, offline",
+    "live: real LLM / memory-service calls; skipped unless --live is given (needs .env, costs money)",
+    "slow: takes more than a few seconds",
+]
+filterwarnings = ["error"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF"]
+ignore = [
+    "RUF001", # ambiguous unicode chars: Chinese full-width punctuation is intentional
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.format]
+line-ending = "lf"

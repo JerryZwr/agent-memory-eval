@@ -1,0 +1,45 @@
+# Install once per clone:  uv run pre-commit install
+# Never bypass with --no-verify (see CLAUDE.md §2.2).
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-illegal-windows-names
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      # Also a guard against committing dataset files by accident.
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      # ruff runs from the project environment so its version comes from
+      # uv.lock, the same one CI and `uv run ruff` use.
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --no-sync ruff check --force-exclude --fix
+        language: system
+        types_or: [python, pyi]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --no-sync ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+      - id: check-denylist
+        name: check local denylist (.denylist.local)
+        entry: uv run --no-sync python scripts/check_denylist.py
+        language: system
+        # Paths are checked as well as contents, so do not filter by file type.

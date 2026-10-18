@@ -1,0 +1,36 @@
+# Created before M0 so that .denylist.local can never be committed by accident.
+# M0 extends this file; keep these two lines.
+.denylist.local
+.env
+
+# Secrets / local config
+.env.*
+!.env.example
+
+# Generated outputs
+reports/
+runs/
+allure-results/
+allure-report/
+
+# Dataset (downloaded by scripts/download_data.py, never committed)
+data/raw/
+
+# Python / tooling caches
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
