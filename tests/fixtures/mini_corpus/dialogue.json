@@ -1,0 +1,71 @@
+[
+  {
+    "date": "2025-03-03",
+    "dialogues": {
+      "Group 1": [
+        {"message_index": 1, "speaker": "Tomas Okafor", "time": "2025-03-03 09:05:00", "dialogue": "Morning all. Decision for the Heron scheduling service: PostgreSQL 16 is the primary database, and Redis is only used as a cache."},
+        {"message_index": 2, "speaker": "Sam Rivers", "time": "2025-03-03 09:12:00", "dialogue": "Sounds good. I will set up the nightly backup job; it will run at 02:30 UTC."},
+        {"message_index": 3, "speaker": "Jun Takeda", "time": "2025-03-03 09:20:00", "dialogue": "I'll own the regression suite. The target is 85% line coverage on the scheduling module before the beta."},
+        {"message_index": 4, "speaker": "Tomas Okafor", "time": "2025-03-03 09:31:00", "dialogue": "For planning: the beta release is targeted for March 21."},
+        {"message_index": 5, "speaker": "Priya Nair", "time": "2025-03-03 10:02:00", "dialogue": "On the frontend side, the maintenance dashboard charts will be built with Recharts."},
+        {"message_index": 6, "speaker": "Sam Rivers", "time": "2025-03-03 10:15:00", "dialogue": "Importing the legacy CSV work orders should take about two days."},
+        {"message_index": 7, "speaker": "Tomas Okafor", "time": "2025-03-03 11:40:00", "dialogue": "Reminder for client integrations: the public API rate limit is 120 requests per minute per client."},
+        {"message_index": 8, "speaker": "Jun Takeda", "time": "2025-03-03 14:03:00", "dialogue": "Found a flaky test in the calendar sync module and filed it as HER-17."}
+      ],
+      "Group 2": [
+        {"message_index": 1, "speaker": "Mara Lind", "time": "2025-03-03 09:45:00", "dialogue": "Kickoff notes for Heron are on the wiki page 'Heron Charter'."},
+        {"message_index": 2, "speaker": "Elena Varga", "time": "2025-03-03 10:20:00", "dialogue": "Design direction: teal palette, primary color #1A7F86, with Inter as the UI font."},
+        {"message_index": 3, "speaker": "Mara Lind", "time": "2025-03-03 10:40:00", "dialogue": "Our pilot customer is Bayside Transit with 40 vehicles."},
+        {"message_index": 4, "speaker": "Elena Varga", "time": "2025-03-03 11:05:00", "dialogue": "I'll share the onboarding flow mockups by Wednesday."},
+        {"message_index": 5, "speaker": "Mara Lind", "time": "2025-03-03 13:30:00", "dialogue": "The weekly product sync moves to Thursdays at 10:00."},
+        {"message_index": 6, "speaker": "Priya Nair", "time": "2025-03-03 15:10:00", "dialogue": "Could we get the empty-state illustrations together with the mockups?"}
+      ]
+    }
+  },
+  {
+    "date": "2025-03-04",
+    "dialogues": {
+      "Group 1": [
+        {"message_index": 1, "speaker": "Tomas Okafor", "time": "2025-03-04 09:10:00", "dialogue": "We are replacing Celery with Dramatiq for the job queue; the Celery workers leaked memory in staging."},
+        {"message_index": 2, "speaker": "Sam Rivers", "time": "2025-03-04 09:25:00", "dialogue": "Ran a restore drill from last night's backup. The full restore took 14 minutes."},
+        {"message_index": 3, "speaker": "Priya Nair", "time": "2025-03-04 10:00:00", "dialogue": "HER-17 is fixed. The root cause was a timezone conversion bug."},
+        {"message_index": 4, "speaker": "Jun Takeda", "time": "2025-03-04 10:30:00", "dialogue": "Confirmed, that test is green on 20 consecutive runs."},
+        {"message_index": 5, "speaker": "Priya Nair", "time": "2025-03-04 11:15:00", "dialogue": "The first version of the maintenance dashboard is deployed to staging."},
+        {"message_index": 6, "speaker": "Tomas Okafor", "time": "2025-03-04 13:45:00", "dialogue": "After this morning's load test we raised the API rate limit to 200 requests per minute per client."},
+        {"message_index": 7, "speaker": "Sam Rivers", "time": "2025-03-04 14:20:00", "dialogue": "Legacy CSV import finished: 12,400 work orders migrated."},
+        {"message_index": 8, "speaker": "Jun Takeda", "time": "2025-03-04 16:00:00", "dialogue": "The regression suite now runs in CI on every merge request."}
+      ],
+      "Group 2": [
+        {"message_index": 1, "speaker": "Elena Varga", "time": "2025-03-04 09:40:00", "dialogue": "Onboarding mockups are uploaded: 6 screens, including the empty states Priya asked for."},
+        {"message_index": 2, "speaker": "Mara Lind", "time": "2025-03-04 10:05:00", "dialogue": "Bayside Transit asked for SMS reminders before each service appointment. Added to the backlog as P2."},
+        {"message_index": 3, "speaker": "Elena Varga", "time": "2025-03-04 11:30:00", "dialogue": "Usability testing with drivers is booked for March 12."},
+        {"message_index": 4, "speaker": "Mara Lind", "time": "2025-03-04 13:00:00", "dialogue": "Legal confirmed we can keep vehicle GPS traces for 90 days."},
+        {"message_index": 5, "speaker": "Priya Nair", "time": "2025-03-04 14:40:00", "dialogue": "The mockups look great. I'll start on the onboarding screens next sprint."},
+        {"message_index": 6, "speaker": "Mara Lind", "time": "2025-03-04 16:20:00", "dialogue": "Design review notes are on the wiki under 'Heron Design Review 1'."}
+      ]
+    }
+  },
+  {
+    "date": "2025-03-05",
+    "dialogues": {
+      "Group 1": [
+        {"message_index": 1, "speaker": "Tomas Okafor", "time": "2025-03-05 09:00:00", "dialogue": "Update: the beta release moves from March 21 to March 28 because of the Dramatiq migration."},
+        {"message_index": 2, "speaker": "Jun Takeda", "time": "2025-03-05 09:20:00", "dialogue": "Line coverage on the scheduling module reached 87% this morning."},
+        {"message_index": 3, "speaker": "Sam Rivers", "time": "2025-03-05 10:10:00", "dialogue": "Backups are now also copied to a second region every Sunday."},
+        {"message_index": 4, "speaker": "Priya Nair", "time": "2025-03-05 11:00:00", "dialogue": "Dashboard charts now load in under 2 seconds on the staging data."},
+        {"message_index": 5, "speaker": "Tomas Okafor", "time": "2025-03-05 13:15:00", "dialogue": "The Dramatiq migration is done; memory usage of the workers is flat."},
+        {"message_index": 6, "speaker": "Jun Takeda", "time": "2025-03-05 14:00:00", "dialogue": "Filed HER-31: notifications are sent twice when a job is rescheduled."},
+        {"message_index": 7, "speaker": "Sam Rivers", "time": "2025-03-05 15:30:00", "dialogue": "Nightly backup job verified three nights in a row."},
+        {"message_index": 8, "speaker": "Tomas Okafor", "time": "2025-03-05 16:45:00", "dialogue": "Code freeze for the beta starts March 24."}
+      ],
+      "Group 2": [
+        {"message_index": 1, "speaker": "Mara Lind", "time": "2025-03-05 09:30:00", "dialogue": "Good news: Bayside Transit expanded the pilot to 55 vehicles."},
+        {"message_index": 2, "speaker": "Elena Varga", "time": "2025-03-05 10:15:00", "dialogue": "Updated the color tokens; the primary color stays #1A7F86."},
+        {"message_index": 3, "speaker": "Mara Lind", "time": "2025-03-05 11:45:00", "dialogue": "SMS reminders moved from P2 to P1 after the pilot expansion."},
+        {"message_index": 4, "speaker": "Elena Varga", "time": "2025-03-05 13:20:00", "dialogue": "Recruited 5 drivers for the usability test on March 12."},
+        {"message_index": 5, "speaker": "Priya Nair", "time": "2025-03-05 14:50:00", "dialogue": "The onboarding screens will use the new color tokens."},
+        {"message_index": 6, "speaker": "Mara Lind", "time": "2025-03-05 16:05:00", "dialogue": "Thanks all, great progress this week."}
+      ]
+    }
+  }
+]
