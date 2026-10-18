@@ -24,7 +24,7 @@
 
 | 里程碑 | 内容 | 预估工时 | 是否需要 key / 花钱 | 状态 |
 |---|---|---|---|---|
-| M0 | 仓库骨架、工具链、CI 雏形、数据集许可证核实 | 3–4 h | 否 | ⬜ |
+| M0 | 仓库骨架、工具链、CI 雏形、数据集许可证核实 | 3–4 h | 否 | 🟡 待推送后确认 CI |
 | M1 | 离线核心流水线：数据模型、合成语料、null/bm25、ScriptedLLM、判分、结局分类、demo | 8–10 h | 否 | ⬜ |
 | M2 | 分析与报告：证据窗口筛题、按维度拆分、2×2、统计、评测报告 HTML | 6–8 h | 否 | ⬜ |
 | M3 | pytest 插件 + Allure + GitHub Pages | 8–10 h | 否 | ⬜ |
@@ -53,10 +53,10 @@
 10. `scripts/download_data.py`：从 HF 下载到 `data/raw/`（gitignored）。
 
 完成标准：
-- [ ] 新克隆的仓库执行 `uv sync && uv run pytest` 通过（此时可以只有一个冒烟测试）
-- [ ] CI 是绿的
-- [ ] 提交一个含假密钥的文件会被 pre-commit 拦下
-- [ ] `docs/decisions.md` 记录了数据集许可证的结论
+- [x] 新克隆的仓库执行 `uv sync && uv run pytest` 通过（此时可以只有一个冒烟测试）
+- [ ] CI 是绿的（`.github/workflows/ci.yml` 已就绪，尚未推送到 GitHub）
+- [x] 提交一个含假密钥的文件会被 pre-commit 拦下
+- [x] `docs/decisions.md` 记录了数据集许可证的结论（D-002；数据结构见 D-003）
 
 ### M1 · 离线核心流水线
 
