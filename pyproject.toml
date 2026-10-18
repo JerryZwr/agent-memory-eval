@@ -9,7 +9,10 @@ authors = [
     { name = "Black-XZ", email = "Black-XZ@users.noreply.github.com" }
 ]
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "pydantic>=2.7",
+    "rank-bm25>=0.2.2",
+]
 
 [project.optional-dependencies]
 # Real LLM / memory-service calls. Only used behind the `live` marker / `--live`.
