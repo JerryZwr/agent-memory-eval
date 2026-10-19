@@ -28,20 +28,20 @@
       "Group 1": [
         {"message_index": 1, "speaker": "Tomas Okafor", "time": "2025-03-04 09:10:00", "dialogue": "We are replacing Celery with Dramatiq for the job queue; the Celery workers leaked memory in staging."},
         {"message_index": 2, "speaker": "Sam Rivers", "time": "2025-03-04 09:25:00", "dialogue": "Ran a restore drill from last night's backup. The full restore took 14 minutes."},
-        {"message_index": 3, "speaker": "Priya Nair", "time": "2025-03-04 10:00:00", "dialogue": "HER-17 is fixed. The root cause was a timezone conversion bug."},
-        {"message_index": 4, "speaker": "Jun Takeda", "time": "2025-03-04 10:30:00", "dialogue": "Confirmed, that test is green on 20 consecutive runs."},
-        {"message_index": 5, "speaker": "Priya Nair", "time": "2025-03-04 11:15:00", "dialogue": "The first version of the maintenance dashboard is deployed to staging."},
-        {"message_index": 6, "speaker": "Tomas Okafor", "time": "2025-03-04 13:45:00", "dialogue": "After this morning's load test we raised the API rate limit to 200 requests per minute per client."},
-        {"message_index": 7, "speaker": "Sam Rivers", "time": "2025-03-04 14:20:00", "dialogue": "Legacy CSV import finished: 12,400 work orders migrated."},
-        {"message_index": 8, "speaker": "Jun Takeda", "time": "2025-03-04 16:00:00", "dialogue": "The regression suite now runs in CI on every merge request."}
+        {"message_index": 3, "speaker": "Jun Takeda", "time": "2025-03-04 10:30:00", "dialogue": "Confirmed, the calendar tests are green on 20 consecutive runs."},
+        {"message_index": 4, "speaker": "Priya Nair", "time": "2025-03-04 11:15:00", "dialogue": "The first version of the maintenance dashboard is deployed to staging."},
+        {"message_index": 5, "speaker": "Tomas Okafor", "time": "2025-03-04 13:45:00", "dialogue": "After this morning's load test we raised the API rate limit to 200 requests per minute per client."},
+        {"message_index": 6, "speaker": "Sam Rivers", "time": "2025-03-04 14:20:00", "dialogue": "Legacy CSV import finished: 12,400 work orders migrated."},
+        {"message_index": 7, "speaker": "Jun Takeda", "time": "2025-03-04 16:00:00", "dialogue": "The regression suite now runs in CI on every merge request."}
       ],
       "Group 2": [
         {"message_index": 1, "speaker": "Elena Varga", "time": "2025-03-04 09:40:00", "dialogue": "Onboarding mockups are uploaded: 6 screens, including the empty states Priya asked for."},
-        {"message_index": 2, "speaker": "Mara Lind", "time": "2025-03-04 10:05:00", "dialogue": "Bayside Transit asked for SMS reminders before each service appointment. Added to the backlog as P2."},
-        {"message_index": 3, "speaker": "Elena Varga", "time": "2025-03-04 11:30:00", "dialogue": "Usability testing with drivers is booked for March 12."},
-        {"message_index": 4, "speaker": "Mara Lind", "time": "2025-03-04 13:00:00", "dialogue": "Legal confirmed we can keep vehicle GPS traces for 90 days."},
-        {"message_index": 5, "speaker": "Priya Nair", "time": "2025-03-04 14:40:00", "dialogue": "The mockups look great. I'll start on the onboarding screens next sprint."},
-        {"message_index": 6, "speaker": "Mara Lind", "time": "2025-03-04 16:20:00", "dialogue": "Design review notes are on the wiki under 'Heron Design Review 1'."}
+        {"message_index": 2, "speaker": "Priya Nair", "time": "2025-03-04 10:00:00", "dialogue": "FYI for the pilot: HER-17 is fixed, so appointment times in the calendar view are right again. The root cause was a timezone conversion bug."},
+        {"message_index": 3, "speaker": "Mara Lind", "time": "2025-03-04 10:05:00", "dialogue": "Bayside Transit asked for SMS reminders before each service appointment. Added to the backlog as P2."},
+        {"message_index": 4, "speaker": "Elena Varga", "time": "2025-03-04 11:30:00", "dialogue": "Usability testing with drivers is booked for March 12."},
+        {"message_index": 5, "speaker": "Mara Lind", "time": "2025-03-04 13:00:00", "dialogue": "Legal confirmed we can keep vehicle GPS traces for 90 days."},
+        {"message_index": 6, "speaker": "Priya Nair", "time": "2025-03-04 14:40:00", "dialogue": "The mockups look great. I'll start on the onboarding screens next sprint."},
+        {"message_index": 7, "speaker": "Mara Lind", "time": "2025-03-04 16:20:00", "dialogue": "Design review notes are on the wiki under 'Heron Design Review 1'."}
       ]
     }
   },

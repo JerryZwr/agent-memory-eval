@@ -42,3 +42,7 @@ class StageError(AgentMemEvalError):
 
 class IncomparableError(AgentMemEvalError):
     """Two results cannot be compared (different corpus, judge version, ...)."""
+
+
+class OverwriteRefusedError(AgentMemEvalError, FileExistsError):
+    """A frozen result (baseline, annotation sheet) exists; replacing it needs an explicit flag."""
