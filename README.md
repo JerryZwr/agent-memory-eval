@@ -7,7 +7,7 @@
 [评测报告](https://jerryzwr.github.io/agent-memory-eval/report/) ·
 [Allure 测试报告](https://jerryzwr.github.io/agent-memory-eval/allure/)
 
-> 🚧 建设中（当前进度：M3 pytest 插件、Allure 与 GitHub Pages）。完整计划见 [PLAN.md](PLAN.md)，评测方法见 [docs/METHODOLOGY.md](docs/METHODOLOGY.md)。
+> 🚧 建设中（已完成 M0–M3；下一步 M4 极简 Agent 与 Agent 层评测）。完整计划见 [PLAN.md](PLAN.md)，评测方法见 [docs/METHODOLOGY.md](docs/METHODOLOGY.md)。
 
 一个开源的 AI 记忆系统与 Agent 评测框架：在公开基准 EverMemBench 上对比记忆系统与无记忆对照组，并用评分员校准、配对统计检验和失败归因证明结论可信；同时用一个刻意做小的工具调用 Agent，展示 Agent 层的测试维度。
 

@@ -27,7 +27,7 @@
 | M0 | 仓库骨架、工具链、CI 雏形、数据集许可证核实 | 3–4 h | 否 | ✅ |
 | M1 | 离线核心流水线：数据模型、合成语料、null/bm25、ScriptedLLM、判分、结局分类、demo | 8–10 h | 否 | ✅ |
 | M2 | 分析与报告：证据窗口筛题、按维度拆分、2×2、统计、评测报告 HTML | 6–8 h | 否 | ✅ |
-| M3 | pytest 插件 + Allure + GitHub Pages | 8–10 h | 否 | ⬜ |
+| M3 | pytest 插件 + Allure + GitHub Pages | 8–10 h | 否 | ✅ |
 | M4 | 极简 Agent + 追踪 + Agent 层 9 个测试维度 | 10–12 h | 否 | ⬜ |
 | M5 | 真实运行：真实 LLM、mem0（可选 EverOS）、评分员校准、查询形态实验 | 8–12 h | **是**（需预算确认） | ⬜ |
 | M6 | 打磨：README 首屏、findings、图表、徽章 | 4–6 h | 否 | ⬜ |
@@ -108,10 +108,10 @@
 6. README 加 CI 状态徽章和两个报告的链接。
 
 完成标准：
-- [ ] 插件自测覆盖：探针红时跳过、后置探针红时整轮 not_measured、diff 四种结局、`--live` 开关
-- [ ] 不带 `--live` 时，所有 live 用例都是 skipped，并给出原因
-- [ ] Allure 报告里能按 epic/feature 浏览，失败用例带附件，失败按 categories 分类
-- [ ] GitHub Pages 上能打开两份报告，Allure 的趋势图在第二次 CI 运行后出现
+- [x] 插件自测覆盖：探针红时跳过、后置探针红时整轮 not_measured、diff 四种结局、`--live` 开关（`tests/plugin/test_plugin.py`，20 个 pytester 用例，关键保证做过变异检查）
+- [x] 不带 `--live` 时，所有 live 用例都是 skipped，并给出原因
+- [x] Allure 报告里能按 epic/feature 浏览，失败用例带附件，失败按 categories 分类（线上报告已核对）
+- [x] GitHub Pages 上能打开两份报告，Allure 的趋势图在第二次 CI 运行后出现（https://jerryzwr.github.io/agent-memory-eval/）
 
 ### M4 · 极简 Agent 与 Agent 层评测
 
