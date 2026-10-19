@@ -31,6 +31,8 @@ class UndeliveredReason(StrEnum):
     EMPTY = "empty"
     NARRATION = "narration"
     ACKNOWLEDGEMENT = "acknowledgement"
+    BUDGET = "budget_exhausted"  # agent layer: stopped by a budget before answering
+    TEXT_ONLY = "text_only"  # agent layer: ended with plain text, no delivery action
 
 
 # Longer replies are treated as content even if they open like a placeholder.

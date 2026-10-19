@@ -1,0 +1,9 @@
+[
+  {"task_id": "WEB_001", "kind": "web", "question": "What is the boiling point of water at sea level in Celsius?", "gold": "100 degrees Celsius"},
+  {"task_id": "WEB_002", "kind": "web", "question": "Who wrote the novel Pride and Prejudice?", "gold": "Jane Austen"},
+  {"task_id": "WEB_003", "kind": "web", "question": "What does HTTP stand for?", "gold": "Hypertext Transfer Protocol"},
+  {"task_id": "WEB_004", "kind": "web", "question": "How many days are there in a leap year?", "gold": "366"},
+  {"task_id": "CHAT_001", "kind": "chitchat", "question": "Hello there!", "gold": null},
+  {"task_id": "CHAT_002", "kind": "chitchat", "question": "Thanks for the help today.", "gold": null},
+  {"task_id": "CHAT_003", "kind": "chitchat", "question": "Good morning, how are you?", "gold": null}
+]
