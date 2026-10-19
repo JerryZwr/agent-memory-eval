@@ -51,3 +51,19 @@ def test_demo_prints_the_table_with_denominators(demo, capsys):
 def test_run_reports_refusals_without_a_traceback(tmp_path, capsys):
     assert main(["run", "--run-dir", str(tmp_path)]) == 1
     assert "StageError" in capsys.readouterr().err
+
+
+def test_demo_writes_the_html_report(demo):
+    out, _, _ = demo
+    assert (out / "report.html").is_file()
+
+
+def test_baseline_cli_freeze_refuse_overwrite_and_diff(demo, tmp_path, capsys):
+    out, _, _ = demo
+    path = tmp_path / "b.json"
+    args = ["baseline", "freeze", "--run", str(out / "bm25"), "--name", "b", "--out", str(path)]
+    assert main(args) == 0
+    assert main(args) == 1  # refused, not a traceback
+    assert "OverwriteRefusedError" in capsys.readouterr().err
+    assert main(["baseline", "diff", "--run", str(out / "bm25"), "--baseline", str(path)]) == 0
+    assert "unchanged=16" in capsys.readouterr().out

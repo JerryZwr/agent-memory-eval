@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1d2330; --muted: #5d6675; --line: #dfe3ea; --panel: #f6f8fb;
+  --accent: #1a6f8a; --control: #9aa4b2; --good: #1e7a46; --bad: #b3261e; --warn: #8a5a00;
+  --warn-bg: #fff4dc; --bad-bg: #fde8e6; --good-bg: #e5f4ea;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --fg: #e4e8ef; --muted: #9aa3b2; --line: #2b313c; --panel: #1a1f27;
+    --accent: #5cb3cc; --control: #6b7482; --good: #6fcf97; --bad: #f28b82; --warn: #f0c36d;
+    --warn-bg: #3a2f17; --bad-bg: #3b1d1b; --good-bg: #183225;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.6 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 20px; margin: 40px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-size: 16px; margin: 20px 0 6px; }
+p, li { max-width: 80ch; }
+.sub { color: var(--muted); margin: 0 0 16px; }
+.note { color: var(--muted); font-size: 13px; }
+.flag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px;
+  background: var(--warn-bg); color: var(--warn); margin-left: 6px; white-space: nowrap; }
+.table-wrap { overflow-x: auto; margin: 8px 0; }
+table { border-collapse: collapse; font-size: 14px; min-width: 100%; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--panel); font-weight: 600; white-space: nowrap; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rate { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rate.small { color: var(--muted); }
+.badge { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+.CORRECT { background: var(--good-bg); color: var(--good); }
+.WRONG { background: var(--bad-bg); color: var(--bad); }
+.none { background: var(--panel); color: var(--muted); }
+.verdict { font-weight: 600; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.card h3 { margin-top: 0; }
+.grid2 td { text-align: center; width: 33%; }
+.grid2 .cellnote { display: block; color: var(--muted); font-size: 12px; }
+details { border: 1px solid var(--line); border-radius: 6px; margin: 6px 0; background: var(--bg); }
+summary { cursor: pointer; padding: 6px 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+details[open] summary { border-bottom: 1px solid var(--line); background: var(--panel); }
+.detail-body { padding: 8px 12px; }
+.detail-body pre { white-space: pre-wrap; word-break: break-word; background: var(--panel);
+  padding: 8px; border-radius: 4px; font-size: 13px; margin: 4px 0; }
+.items li { font-size: 13px; }
+.hit { color: var(--good); font-weight: 600; }
+code { font-size: 13px; }
+svg.chart { width: 100%; max-width: 560px; height: auto; display: block; margin: 8px 0; }
+svg .grid { stroke: var(--line); }
+svg .tick, svg .label, svg .value { fill: var(--muted); font-size: 12px; }
+svg .label { fill: var(--fg); }
+svg .bar { fill: var(--accent); }
+svg .bar.control { fill: var(--control); }
+svg .whisker { stroke: var(--fg); stroke-width: 1.5; }
+</style>
+</head>
+<body>
+<main>
+{% macro rate(r) -%}
+<span class="rate{% if r.small %} small{% endif %}">{{ r }}</span>
+{%- endmacro %}
+{% macro small_flag() -%}
+{% if small_sample %}<span class="flag">n &lt; {{ small_threshold }}：仅供定性参考</span>{% endif %}
+{%- endmacro %}
+
+<h1>{{ title }}</h1>
+<p class="sub">
+  语料 <code>{{ meta.corpus_id }}</code> · 答题 <code>{{ meta.answer_model }}</code>（{{ meta.answer_prompt_version }}）
+  · 评分员 <code>{{ meta.judge_model }}</code>（{{ meta.judge_prompt_version }}）<br>
+  生成于 {{ generated_at }} · {{ generator }}
+</p>
+
+<h2>结论与局限</h2>
+<p>下面每个比率都写成 <code>答对数/分母 = 百分比 [95% Wilson 区间]</code>。
+两个 arm 之间的差异只在配对检验显著时才说“高于 / 低于”。</p>
+<ul>
+{% for label, c in comparisons %}
+  <li><strong>{{ label }}</strong>：{{ c.verdict() }}。配对题数 {{ c.n_pairs }}，
+    答对率差 {{ c.difference | signed_pct }}{% if c.difference_interval %}（bootstrap 95% 区间 [{{ c.difference_interval.low | signed_pct }}, {{ c.difference_interval.high | signed_pct }}]）{% endif %}。</li>
+{% else %}
+  <li>没有 null 对照组，无法给出“相对对照组”的结论；单个 arm 的绝对分数说明不了记忆的作用。</li>
+{% endfor %}
+</ul>
+<h3>局限</h3>
+<ul>
+{% for item in limitations %}<li>{{ item }}</li>
+{% endfor %}
+</ul>
+
+<h2>计分范围</h2>
+<p>灌入的天数：{{ dataset.days[0] }} 至 {{ dataset.days[-1] }}（{{ dataset.days | length }} 天，{{ dataset.messages | length }} 条消息）。
+题目覆盖整个语料期，只提问、计分证据窗口允许的类别（METHODOLOGY 1.3）。</p>
+<div class="table-wrap"><table>
+<tr><th>类别</th><th>含义</th><th>题数</th><th>是否提问 / 计分</th></tr>
+{% for c, n, asked, desc in class_rows %}
+<tr><td>{{ c.value }}</td><td>{{ desc }}</td><td class="num">{{ n }}</td><td>{{ "是" if asked else "否" }}</td></tr>
+{% endfor %}
+</table></div>
+
+<h2>总表 {{ small_flag() }}</h2>
+<p class="note">答案正确率 = 答对 / 已交付；端到端成功率 = 答对 / (已交付 + 未交付)。环境故障两个分母都不计入，单独列出（METHODOLOGY 1.4）。
+歧义提取 = 选择题答案里的字母需要从文本里“搜”出来，或出现多个字母。</p>
+<div class="table-wrap"><table>
+<tr><th>arm</th><th>题目类别</th><th>n</th><th>已交付</th><th>未交付</th><th>环境故障</th><th>歧义提取</th><th>答案正确率</th><th>端到端成功率</th></tr>
+{% for a in arms %}{% for label, t in a.by_class %}
+<tr><td>{{ a.name }}</td><td>{{ label }}</td><td class="num">{{ t.n }}</td><td class="num">{{ t.delivered }}</td>
+<td class="num">{{ t.undelivered }}</td><td class="num">{{ t.env_failure }}</td><td class="num">{{ t.ambiguous_extraction }}</td>
+<td>{{ rate(t.accuracy) }}</td><td>{{ rate(t.end_to_end) }}</td></tr>
+{% endfor %}{% endfor %}
+</table></div>
+<h3>A 类答案正确率（条形 = 点估计，横线 = 95% Wilson 区间；灰色为 null 对照组）</h3>
+{{ chart }}
+
+<h2>与 null 对照组的配对比较</h2>
+<p class="note">同一批题按题号配对；只看结论不一致的配对（McNemar 精确检验）。一侧环境故障的题不参与配对；未交付算作答错。</p>
+<div class="table-wrap"><table>
+<tr><th>类别</th><th>arm vs null</th><th>配对题数</th><th>都对</th><th>只有 arm 对</th><th>只有 null 对</th><th>都错</th><th>p 值</th><th>结论</th></tr>
+{% for label, c in comparisons %}
+<tr><td>{{ label }}</td><td>{{ c.treatment }} vs {{ c.control }}</td><td class="num">{{ c.n_pairs }}</td>
+<td class="num">{{ c.both_pass }}</td><td class="num">{{ c.only_treatment }}</td><td class="num">{{ c.only_control }}</td>
+<td class="num">{{ c.neither }}</td><td class="num">{{ c.p_value | p_value }}</td><td class="verdict">{{ c.verdict() }}</td></tr>
+{% else %}
+<tr><td colspan="9">没有 null 对照组。</td></tr>
+{% endfor %}
+</table></div>
+
+<h2>按题型拆分 {{ small_flag() }}</h2>
+<p class="note">不同题型不能混在一起比较：选择题有随机猜对的下限，开放题没有。小格子只用于定位问题，不做横向比较（METHODOLOGY 1.7、1.8）。</p>
+<div class="table-wrap"><table>
+<tr><th>题型</th>{% for a in arms %}<th>{{ a.name }}：答案正确率</th>{% endfor %}</tr>
+{% for qt, label in qtypes %}
+<tr><td>{{ qt }} <span class="note">{{ label }}</span></td>
+{% for a in arms %}<td>{% if qt in a.by_qtype %}{{ rate(a.by_qtype[qt].accuracy) }}{% else %}—{% endif %}</td>{% endfor %}</tr>
+{% endfor %}
+</table></div>
+
+<h2>按证据范围拆分 {{ small_flag() }}</h2>
+<div class="table-wrap"><table>
+<tr><th>证据范围</th>{% for a in arms %}<th>{{ a.name }}：答案正确率</th>{% endfor %}</tr>
+{% for s in scopes %}
+<tr><td>{{ s }}</td>{% for a in arms %}<td>{% if s in a.by_scope %}{{ rate(a.by_scope[s].accuracy) }}{% else %}—{% endif %}</td>{% endfor %}</tr>
+{% endfor %}
+</table></div>
+
+<h2>检索 × 判分（2×2）</h2>
+<p class="note">只统计有证据位置、且已交付的题。四个格子对应不同的改进方向（METHODOLOGY 1.8）。“命中但答错”是阅读或推理问题，“未命中但答对”不能算作记忆的功劳。</p>
+<div class="cards">
+{% for a in arms %}{% for t in a.two_by_two %}
+<div class="card">
+<h3>{{ a.name }} · {% for c, label in criteria %}{% if c == t.criterion %}{{ label }}{% endif %}{% endfor %}</h3>
+<table class="grid2">
+<tr><th></th><th>答对</th><th>答错</th></tr>
+<tr><th>命中</th><td>{{ t.hit_correct }}<span class="cellnote">记忆带来的正确</span></td><td>{{ t.hit_wrong }}<span class="cellnote">阅读 / 推理问题</span></td></tr>
+<tr><th>未命中</th><td>{{ t.miss_correct }}<span class="cellnote">猜对或靠常识</span></td><td>{{ t.miss_wrong }}<span class="cellnote">检索问题</span></td></tr>
+</table>
+<p class="note">共 {{ t.n }} 题；未交付而不计入 {{ t.not_delivered }} 题。</p>
+</div>
+{% endfor %}{% endfor %}
+</div>
+
+<h2>逐题明细</h2>
+<p class="note">点开查看题目、标准答案、各 arm 的答案、判分理由和检索返回的前几条（✔ = 证据消息）。</p>
+{% for qv in questions %}
+<details>
+<summary><code>{{ qv.question.qid }}</code><span class="note">{{ qv.window_class.value }} 类</span>
+{% for pa in qv.per_arm %}<span>{{ pa.arm }}:
+{% if pa.judge is none %}<span class="badge none">未提问</span>
+{% elif pa.judge.verdict is none %}<span class="badge none">{{ pa.judge.outcome.value }}</span>
+{% else %}<span class="badge {{ pa.judge.verdict }}">{{ pa.judge.verdict }}</span>{% endif %}
+{% if pa.judge is not none and pa.judge.ambiguous_extraction %}<span class="flag">歧义提取</span>{% endif %}</span>
+{% endfor %}</summary>
+<div class="detail-body">
+<p><strong>题目：</strong>{{ qv.question.question }}</p>
+{% if qv.question.options %}<ul>{% for k, v in qv.question.options.items() %}<li>{{ k }}. {{ v }}</li>{% endfor %}</ul>{% endif %}
+<p><strong>标准答案：</strong>{{ qv.question.gold }}</p>
+{% for pa in qv.per_arm %}{% if pa.judge is not none %}
+<h3>{{ pa.arm }}</h3>
+<pre>{{ pa.judge.answer if pa.judge.answer is not none else "（无答案）" }}</pre>
+<p class="note">结局 {{ pa.judge.outcome.value }}
+{% if pa.judge.method == "mc_extraction" %} · 提取到 {{ pa.judge.extracted_choice or "无" }}（{{ pa.judge.extraction_method }}）{% endif %}
+{% if pa.judge.judge_reason %} · 评分员：{{ pa.judge.judge_reason }}{% endif %}
+{% if pa.hit is not none %} · 检索{{ "命中" if pa.hit else "未命中" }}证据消息{% endif %}
+{% if pa.search_error %} · 检索错误 {{ pa.search_error.type }}{% endif %}</p>
+{% if pa["items"] %}<ol class="items">{% for it, is_ev in pa["items"] %}
+<li>{% if is_ev %}<span class="hit">✔</span> {% endif %}{{ it.time }} · {{ it.group }} · {{ it.speaker }}：{{ it.text }} <span class="note">({{ "%.2f" | format(it.score) }})</span></li>
+{% endfor %}</ol>{% else %}<p class="note">检索没有返回任何内容。</p>{% endif %}
+{% endif %}{% endfor %}
+</div>
+</details>
+{% endfor %}
+
+<h2>运行元数据</h2>
+<p class="note">报告里的每个数字都由下列结果文件计算得到；records_sha256 可用来核对文件没有被改动（METHODOLOGY P4）。</p>
+{% for a in arms %}
+<h3>{{ a.name }}</h3>
+<div class="table-wrap"><table>
+<tr><th>字段</th><th>值</th></tr>
+{% for k, v in a.run.meta.model_dump().items() %}<tr><td>{{ k }}</td><td><code>{{ v }}</code></td></tr>
+{% endfor %}
+<tr><td>run_dir</td><td><code>{{ a.run.run_dir.name }}</code></td></tr>
+{% for s in stages %}<tr><td>{{ s }}.json</td><td><code>records_sha256 {{ a.run.files[s].records_sha256[:16] }}…</code></td></tr>
+{% endfor %}
+</table></div>
+{% endfor %}
+</main>
+</body>
+</html>
