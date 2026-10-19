@@ -23,6 +23,7 @@ Role = Literal["system", "user", "assistant", "tool"]
 class ToolCall:
     name: str
     arguments: dict[str, Any] = field(default_factory=dict)
+    id: str | None = None  # provider-assigned; needed to send the tool result back
 
 
 @dataclass(frozen=True)

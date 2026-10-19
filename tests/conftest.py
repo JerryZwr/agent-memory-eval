@@ -3,14 +3,31 @@
 `--live`, `requires_env` and the other evaluation options come from the
 `pytest_agenteval` plugin (loaded through its pytest11 entry point).
 
-This file only labels tests for Allure (METHODOLOGY 3.2): epic = which layer,
+This file labels tests for Allure (METHODOLOGY 3.2): epic = which layer,
 feature = which capability. Labels set with decorators in a test file win
 over these defaults.
+
+It also keeps offline tests offline (CLAUDE.md §2.2): `.env` is never loaded
+and the API key is removed, unless the session runs live tests with --live.
 """
 
 from __future__ import annotations
 
+import os
+import sys
+
 import pytest
+
+LIVE_SESSION = "--live" in sys.argv
+if not LIVE_SESSION:
+    os.environ["AGENTMEMEVAL_NO_DOTENV"] = "1"
+
+
+@pytest.fixture(autouse=True)
+def _no_real_key(monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest) -> None:
+    if "live" not in request.keywords:
+        monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+
 
 EPIC_BY_DIR = {"unit": "框架自测", "plugin": "框架自测", "eval": "记忆层", "agent": "Agent 层"}
 
