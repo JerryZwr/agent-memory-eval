@@ -7,9 +7,10 @@ the run, not turn into a plausible-looking wrong answer (P1).
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from agentmemeval.analysis.outcome import Outcome, classify_delivery
+from agentmemeval.analysis.windows import WindowClass
 from agentmemeval.arms.base import MemoryArm
 from agentmemeval.data.models import Dataset, Question
 from agentmemeval.errors import InfraError, StageError
@@ -63,6 +64,7 @@ def run_search(
     ingest: IngestRecord,
     questions: Sequence[Question],
     top_k: int,
+    window_classes: Mapping[str, WindowClass],
 ) -> list[SearchRecord]:
     if ingest.message_ids_sha256 != dataset.message_ids_sha256:
         raise StageError("search: corpus differs from the one ingested; re-run ingest")
@@ -79,6 +81,7 @@ def run_search(
                 qid=q.qid,
                 qtype=q.qtype,
                 evidence_status=q.evidence_status,
+                window_class=window_classes[q.qid],
                 query=query,
                 items=items,
                 error=error,
@@ -111,6 +114,7 @@ def run_answer(
                 qid=s.qid,
                 qtype=s.qtype,
                 evidence_status=s.evidence_status,
+                window_class=s.window_class,
                 prompt=prompt,
                 response=response,
                 outcome=cls.outcome,
@@ -133,6 +137,7 @@ def run_judge(
             "qid": a.qid,
             "qtype": a.qtype,
             "evidence_status": a.evidence_status,
+            "window_class": a.window_class,
             "is_mc": q.is_mc,
             "outcome": a.outcome,
             "gold": q.gold,

@@ -16,11 +16,12 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 from agentmemeval.analysis.outcome import Outcome, UndeliveredReason
+from agentmemeval.analysis.windows import WindowClass
 from agentmemeval.arms.base import RetrievedItem
 from agentmemeval.data.models import EvidenceStatus
 from agentmemeval.judge.base import Label
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # v2: window_class on question records, scored_classes in meta
 STAGES = ("ingest", "search", "answer", "judge")
 Stage = Literal["ingest", "search", "answer", "judge"]
 
@@ -40,6 +41,7 @@ class RunMeta(_Model):
     answer_prompt_version: str
     judge_model: str
     judge_prompt_version: str
+    scored_classes: str  # e.g. "A,D": which evidence-window classes were asked
 
 
 class FileMeta(RunMeta):
@@ -82,6 +84,7 @@ class _QuestionRecord(_Model):
     qid: str
     qtype: str
     evidence_status: EvidenceStatus
+    window_class: WindowClass
 
 
 class SearchRecord(_QuestionRecord):

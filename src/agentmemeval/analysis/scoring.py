@@ -7,8 +7,7 @@
 their own. A delivered answer without a verdict is refused, not skipped:
 silently dropping it would shrink the denominator.
 
-Intervals and significance tests are M2 (`analysis/stats.py`); this module
-only counts.
+Every rate carries its Wilson 95% interval and renders as `k/n = p% [lo, hi]`.
 """
 
 from __future__ import annotations
@@ -18,6 +17,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 
 from agentmemeval.analysis.outcome import Outcome
+from agentmemeval.analysis.stats import SMALL_SAMPLE, Interval, wilson
 from agentmemeval.errors import StageError
 from agentmemeval.pipeline.records import JudgeRecord
 
@@ -31,9 +31,20 @@ class Ratio:
     def value(self) -> float | None:
         return self.num / self.den if self.den else None
 
+    @property
+    def interval(self) -> Interval | None:
+        return wilson(self.num, self.den)
+
+    @property
+    def small(self) -> bool:
+        return self.den < SMALL_SAMPLE
+
     def __str__(self) -> str:
-        v = self.value
-        return f"{self.num}/{self.den} = {v:.0%}" if v is not None else f"{self.num}/0 = n/a"
+        """The one rate format used everywhere: `6/11 = 55% [28%, 79%]` (METHODOLOGY 1.7)."""
+        v, ci = self.value, self.interval
+        if v is None or ci is None:
+            return f"{self.num}/0 = n/a"
+        return f"{self.num}/{self.den} = {v:.0%} [{ci.low:.0%}, {ci.high:.0%}]"
 
 
 @dataclass(frozen=True)

@@ -72,6 +72,6 @@ def format_results(results: Sequence[RunResult]) -> str:
     if smallest is not None and smallest < SMALL_SAMPLE:
         lines.append(
             f"Some rows have n < {SMALL_SAMPLE}: qualitative only (METHODOLOGY 1.7). "
-            "Intervals and paired tests arrive in M2."
+            "The HTML report adds paired tests: agentmemeval report --run <dir>."
         )
     return "\n".join(lines)

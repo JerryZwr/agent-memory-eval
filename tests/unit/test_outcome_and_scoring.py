@@ -10,6 +10,7 @@ from agentmemeval.analysis.outcome import (
     classify_delivery,
 )
 from agentmemeval.analysis.scoring import Ratio, tally, tally_by
+from agentmemeval.analysis.windows import WindowClass
 from agentmemeval.data.models import EvidenceStatus
 from agentmemeval.errors import StageError
 from agentmemeval.pipeline.records import JudgeRecord
@@ -79,6 +80,7 @@ def _rec(qid, outcome, verdict=None, ambiguous=False, status=EvidenceStatus.LOCA
         qid=qid,
         qtype="F_SH",
         evidence_status=status,
+        window_class=WindowClass.A,
         is_mc=False,
         outcome=outcome,
         gold="g",
@@ -121,6 +123,8 @@ class TestTally:
         assert groups["located"].correct == 1
 
     def test_ratio_formatting(self):
-        assert str(Ratio(6, 11)) == "6/11 = 55%"
+        assert str(Ratio(6, 11)) == "6/11 = 55% [28%, 79%]"  # METHODOLOGY 1.7 example
+        assert Ratio(6, 11).small
+        assert not Ratio(30, 60).small
         assert str(Ratio(0, 0)) == "0/0 = n/a"
         assert Ratio(0, 0).value is None

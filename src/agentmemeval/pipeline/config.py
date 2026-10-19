@@ -9,11 +9,13 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
+from functools import cached_property
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from agentmemeval.analysis.windows import WindowClass, classify_all, scored_classes
 from agentmemeval.arms import MemoryArm, build_arm
 from agentmemeval.data.loaders import load_fixture, load_legacy_batch
 from agentmemeval.data.models import Dataset, Question
@@ -51,10 +53,17 @@ class JudgeSpec(_Spec):
     kind: Literal["scripted"] = "scripted"
 
 
+class QuestionSpec(_Spec):
+    """Which evidence-window classes are asked and scored (METHODOLOGY 1.3)."""
+
+    include_b: bool = False  # boundary-spanning evidence: excluded unless opted in
+
+
 class RunConfig(_Spec):
     run_id: str
     dataset: DatasetSpec
     arm: ArmSpec
+    questions: QuestionSpec = QuestionSpec()
     answer: AnswerSpec = AnswerSpec()
     judge: JudgeSpec = JudgeSpec()
 
@@ -99,9 +108,14 @@ class Components:
         """A fresh arm instance. Each stage gets its own, so stages share only files."""
         return build_arm(self.config.arm.name, self.config.arm.params)
 
+    @cached_property
+    def window_classes(self) -> dict[str, WindowClass]:
+        return classify_all(self.dataset)
+
     def questions(self) -> tuple[Question, ...]:
-        # M1 asks every question. M2 replaces this with evidence-window filtering.
-        return self.dataset.questions
+        """The questions this run asks: those whose window class is scored."""
+        keep = scored_classes(self.config.questions.include_b)
+        return tuple(q for q in self.dataset.questions if self.window_classes[q.qid] in keep)
 
 
 def build_components(
@@ -124,5 +138,6 @@ def build_components(
         answer_prompt_version=ANSWER_PROMPT_VERSION,
         judge_model=jdg.model,
         judge_prompt_version=jdg.prompt_version,
+        scored_classes=",".join(sorted(scored_classes(config.questions.include_b))),
     )
     return Components(config=config, dataset=dataset, answer_llm=llm, judge=jdg, meta=meta)

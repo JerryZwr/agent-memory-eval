@@ -165,7 +165,53 @@ def _compute(stage: Stage, comps: Components, upstream: StageFile | None, questi
     assert upstream is not None
     if stage == "search":
         (ingest,) = parse_records(upstream, IngestRecord)
-        return st.run_search(ds, comps.new_arm(), ingest, questions, comps.config.arm.top_k)
+        return st.run_search(
+            ds, comps.new_arm(), ingest, questions, comps.config.arm.top_k, comps.window_classes
+        )
     if stage == "answer":
         return st.run_answer(ds, parse_records(upstream, SearchRecord), comps.answer_llm, questions)
     return st.run_judge(ds, parse_records(upstream, AnswerRecord), comps.judge, questions)
+
+
+@dataclass
+class LoadedRun:
+    """A finished run, verified but never modified. Input to analysis, reports and baselines."""
+
+    run_dir: Path
+    components: Components
+    files: dict[str, StageFile]
+    search_records: list[SearchRecord]
+    answer_records: list[AnswerRecord]
+    judge_records: list[JudgeRecord]
+
+    @property
+    def meta(self) -> FileMeta:
+        return self.files["judge"].meta
+
+
+def load_run(run_dir: Path) -> LoadedRun:
+    """Read a complete run. Missing, stale or mismatched stage files are refused (no re-runs).
+
+    Reports must describe exactly the files on disk, so this never computes
+    anything: resume with `agentmemeval run --run-dir` first if it refuses.
+    """
+    cfg = load_run_config(run_dir)
+    comps = build_components(cfg)
+    files: dict[str, StageFile] = {}
+    upstream: StageFile | None = None
+    for stage in STAGES:
+        if not stage_path(run_dir, stage).exists():
+            raise StageError(f"{run_dir}: {stage}.json is missing; finish the run first")
+        sf = read_stage(run_dir, stage)
+        _check_meta(sf, comps, run_dir)
+        if sf.upstream != _upstream_of(upstream):
+            raise StageError(f"{run_dir}: {stage}.json is stale relative to its upstream")
+        files[stage] = upstream = sf
+    return LoadedRun(
+        run_dir=run_dir,
+        components=comps,
+        files=files,
+        search_records=parse_records(files["search"], SearchRecord),
+        answer_records=parse_records(files["answer"], AnswerRecord),
+        judge_records=parse_records(files["judge"], JudgeRecord),
+    )
