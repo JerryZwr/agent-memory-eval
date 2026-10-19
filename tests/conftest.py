@@ -32,6 +32,8 @@ FEATURE_BY_MODULE = {
     "test_breakdown_and_baseline": "分析：拆分、2×2 与基线",
     "test_report": "评测报告",
     "test_probes": "环境探针",
+    "test_tracing": "追踪器",
+    "test_agent_eval": "Agent 批量评测",
 }
 CRITICAL_MODULES = {"test_outcome_and_scoring", "test_pipeline", "test_probes"}
 

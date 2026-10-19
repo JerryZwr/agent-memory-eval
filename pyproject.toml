@@ -52,7 +52,7 @@ module-name = ["agentmemeval", "pytest_agenteval"]
 minversion = "8.0"
 # tests/eval holds measurements (cases fail when the system under test answers wrong);
 # they run explicitly (`uv run pytest tests/eval`), not as part of the default gate.
-testpaths = ["tests/unit", "tests/plugin"]
+testpaths = ["tests/unit", "tests/plugin", "tests/agent"]
 addopts = ["--strict-markers", "--strict-config", "-ra", "-p", "pytester"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
