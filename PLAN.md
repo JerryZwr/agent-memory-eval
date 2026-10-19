@@ -26,7 +26,7 @@
 |---|---|---|---|---|
 | M0 | 仓库骨架、工具链、CI 雏形、数据集许可证核实 | 3–4 h | 否 | ✅ |
 | M1 | 离线核心流水线：数据模型、合成语料、null/bm25、ScriptedLLM、判分、结局分类、demo | 8–10 h | 否 | ✅ |
-| M2 | 分析与报告：证据窗口筛题、按维度拆分、2×2、统计、评测报告 HTML | 6–8 h | 否 | ⬜ |
+| M2 | 分析与报告：证据窗口筛题、按维度拆分、2×2、统计、评测报告 HTML | 6–8 h | 否 | ✅ |
 | M3 | pytest 插件 + Allure + GitHub Pages | 8–10 h | 否 | ⬜ |
 | M4 | 极简 Agent + 追踪 + Agent 层 9 个测试维度 | 10–12 h | 否 | ⬜ |
 | M5 | 真实运行：真实 LLM、mem0（可选 EverOS）、评分员校准、查询形态实验 | 8–12 h | **是**（需预算确认） | ⬜ |
@@ -86,11 +86,11 @@
 6. `agentmemeval report --run <dir>`。
 
 完成标准：
-- [ ] stats 的每个函数都有与已知数值核对的单元测试
-- [ ] B 类题默认被排除，传显式参数才纳入
-- [ ] 基线 diff 的四种结局都有测试；`corpus_id` 不同时拒绝 diff
-- [ ] 报告里每个比率都带分母和 95% 区间；样本 < 30 的地方有"仅供定性参考"标注
-- [ ] demo 运行后能生成报告并在浏览器中打开
+- [x] stats 的每个函数都有与已知数值核对的单元测试（Newcombe 1998 的 Wilson 例子、Wikipedia 的 κ 例子、McNemar 的 2×0.5ⁿ 表；`tests/unit/test_stats.py`）
+- [x] B 类题默认被排除，传显式参数才纳入（`QuestionSpec.include_b`；`tests/unit/test_windows.py`）
+- [x] 基线 diff 的四种结局都有测试；`corpus_id` 不同时拒绝 diff（`tests/unit/test_breakdown_and_baseline.py`）
+- [x] 报告里每个比率都带分母和 95% 区间；样本 < 30 的地方有"仅供定性参考"标注（`tests/unit/test_report.py` 逐个检查）
+- [x] demo 运行后能生成报告并在浏览器中打开（demo 自动写 `report.html`；`--open` 用浏览器打开）
 
 ### M3 · pytest 插件 + Allure + GitHub Pages
 
