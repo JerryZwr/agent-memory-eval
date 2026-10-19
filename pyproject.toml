@@ -28,6 +28,10 @@ data = [
 [project.scripts]
 agentmemeval = "agentmemeval.cli:main"
 
+# The pytest plugin ships as its own top-level package and loads automatically.
+[project.entry-points.pytest11]
+agenteval = "pytest_agenteval.plugin"
+
 [dependency-groups]
 dev = [
     "pytest>=8.0",
@@ -41,10 +45,15 @@ dev = [
 requires = ["uv_build>=0.11.26,<0.12.0"]
 build-backend = "uv_build"
 
+[tool.uv.build-backend]
+module-name = ["agentmemeval", "pytest_agenteval"]
+
 [tool.pytest.ini_options]
 minversion = "8.0"
-testpaths = ["tests"]
-addopts = ["--strict-markers", "--strict-config", "-ra"]
+# tests/eval holds measurements (cases fail when the system under test answers wrong);
+# they run explicitly (`uv run pytest tests/eval`), not as part of the default gate.
+testpaths = ["tests/unit", "tests/plugin"]
+addopts = ["--strict-markers", "--strict-config", "-ra", "-p", "pytester"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 markers = [
@@ -52,6 +61,7 @@ markers = [
     "agent: agent-layer evaluation cases driven by ScriptedLLM, offline",
     "live: real LLM / memory-service calls; skipped unless --live is given (needs .env, costs money)",
     "slow: takes more than a few seconds",
+    "eval: per-question measurement of the system under test (tests/eval)",
 ]
 filterwarnings = ["error"]
 

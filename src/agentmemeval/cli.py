@@ -15,9 +15,8 @@ from pathlib import Path
 
 from agentmemeval import __version__
 from agentmemeval.errors import AgentMemEvalError
+from agentmemeval.pipeline.config import DEFAULT_FIXTURE
 
-REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "mini_corpus"
 DEMO_ARMS = ("null", "bm25")
 
 

@@ -26,6 +26,9 @@ from agentmemeval.llm.scripted import make_reader_llm
 from agentmemeval.pipeline.prompts import ANSWER_PROMPT_VERSION
 from agentmemeval.pipeline.records import RunMeta
 
+# The synthetic corpus lives with the tests (CLAUDE.md §2.3); resolved from a source checkout.
+DEFAULT_FIXTURE = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "mini_corpus"
+
 
 class _Spec(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -66,6 +69,15 @@ class RunConfig(_Spec):
     questions: QuestionSpec = QuestionSpec()
     answer: AnswerSpec = AnswerSpec()
     judge: JudgeSpec = JudgeSpec()
+
+
+def default_eval_config(arm: str = "bm25", run_id: str = "eval") -> RunConfig:
+    """The offline evaluation stack: synthetic corpus, scripted reader and judge."""
+    return RunConfig(
+        run_id=run_id,
+        dataset=DatasetSpec(kind="fixture", path=DEFAULT_FIXTURE.as_posix()),
+        arm=ArmSpec(name=arm),
+    )
 
 
 def load_dataset(spec: DatasetSpec) -> Dataset:
