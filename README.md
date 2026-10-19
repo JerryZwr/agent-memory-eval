@@ -1,6 +1,13 @@
 # agent-memory-eval
 
-> 🚧 建设中（当前进度：M2 分析与评测报告）。完整计划见 [PLAN.md](PLAN.md)，评测方法见 [docs/METHODOLOGY.md](docs/METHODOLOGY.md)。
+[![CI](https://github.com/JerryZwr/agent-memory-eval/actions/workflows/ci.yml/badge.svg)](https://github.com/JerryZwr/agent-memory-eval/actions/workflows/ci.yml)
+[![Pages](https://github.com/JerryZwr/agent-memory-eval/actions/workflows/pages.yml/badge.svg)](https://github.com/JerryZwr/agent-memory-eval/actions/workflows/pages.yml)
+
+**在线报告**（CI 每次推送后用合成语料离线生成）：
+[评测报告](https://jerryzwr.github.io/agent-memory-eval/report/) ·
+[Allure 测试报告](https://jerryzwr.github.io/agent-memory-eval/allure/)
+
+> 🚧 建设中（当前进度：M3 pytest 插件、Allure 与 GitHub Pages）。完整计划见 [PLAN.md](PLAN.md)，评测方法见 [docs/METHODOLOGY.md](docs/METHODOLOGY.md)。
 
 一个开源的 AI 记忆系统与 Agent 评测框架：在公开基准 EverMemBench 上对比记忆系统与无记忆对照组，并用评分员校准、配对统计检验和失败归因证明结论可信；同时用一个刻意做小的工具调用 Agent，展示 Agent 层的测试维度。
 
@@ -13,8 +20,9 @@
 ```powershell
 uv sync
 uv run agentmemeval demo --open   # 离线 demo：合成语料，null 对照组 vs bm25，几秒内跑完并打开报告
-uv run pytest
-uv run pre-commit install   # 开发者：启用提交前检查
+uv run pytest                     # 框架自测（门禁，必须全绿）
+uv run pytest tests/eval          # 记忆层逐题评测（测量：答错的题会失败）
+uv run pre-commit install         # 开发者：启用提交前检查
 ```
 
 demo 把每次运行的四个阶段（ingest → search → answer → judge）分别写到 `runs/demo-<时间>/<arm>/` 下，

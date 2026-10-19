@@ -1,0 +1,113 @@
+name: Pages
+
+# Publishes two reports to GitHub Pages:
+#   /allure/  Allure test report (framework self-tests + per-question memory evaluation), with trend
+#   /report/  evaluation report from the offline demo (null vs bm25)
+# Everything is generated here from committed content only; no local runs, data or secrets are
+# read (docs/decisions.md D-005). Allure 2 is used because it reads categories.json natively and
+# its history mechanism is the documented one (copy history/ back into the results).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time, never cancelled midway: each run restores the previous run's history.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  ALLURE_VERSION: "2.46.1"
+  # sha256 of allure-2.46.1.tgz, matching the digest GitHub publishes for the release asset.
+  ALLURE_SHA256: "37428164f310c8d137cfdd2c3a25d049b233261ddab13e1bd4dfd7627b5cbf8d"
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04  # pinned: ubuntu-latest moves to 26.04; Java 17 is preinstalled here
+    outputs:
+      gate: ${{ steps.gate.outcome }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          python-version: "3.12"
+
+      - id: pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Framework self-tests (the gate)
+        id: gate
+        # Keep going so a broken gate is still visible in the published report;
+        # the deploy job fails the run afterwards.
+        continue-on-error: true
+        run: uv run pytest --alluredir=allure-results
+
+      - name: Memory-layer evaluation (measurements; failing cases are findings)
+        run: |
+          mkdir -p site/report
+          set +e
+          uv run pytest tests/eval --alluredir=allure-results --eval-json-report=site/report/round.json
+          code=$?
+          set -e
+          # 0 = all correct, 1 = some answers wrong (expected). Anything else is a broken suite.
+          if [ "$code" -gt 1 ]; then exit "$code"; fi
+
+      - name: Offline demo and evaluation report
+        run: |
+          uv run agentmemeval demo --out runs/pages
+          cp runs/pages/report.html site/report/index.html
+
+      - name: Restore Allure history from the live site (absent on the first run)
+        env:
+          BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          mkdir -p allure-results/history
+          for f in history.json history-trend.json duration-trend.json retry-trend.json categories-trend.json; do
+            curl -fsSL "$BASE_URL/allure/history/$f" -o "allure-results/history/$f" \
+              || rm -f "allure-results/history/$f"
+          done
+          ls -l allure-results/history
+
+      - name: Install Allure ${{ env.ALLURE_VERSION }} (checksum-pinned)
+        run: |
+          curl -fsSL -o allure.tgz \
+            "https://github.com/allure-framework/allure2/releases/download/${ALLURE_VERSION}/allure-${ALLURE_VERSION}.tgz"
+          echo "${ALLURE_SHA256}  allure.tgz" | sha256sum -c -
+          tar xzf allure.tgz
+
+      - name: Generate Allure report
+        run: allure-${ALLURE_VERSION}/bin/allure generate allure-results -o site/allure --clean
+
+      - name: Landing page
+        run: cp .github/pages/index.html site/index.html
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+      - name: Fail the run if the framework self-tests failed
+        if: needs.build.outputs.gate != 'success'
+        run: |
+          echo "::error::framework self-tests failed; see the Allure report for which"
+          exit 1

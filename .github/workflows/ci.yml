@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-24.04]  # pinned: ubuntu-latest moves to 26.04 in Nov 2026
         python-version: ["3.11", "3.12"]
         include:
           # The author develops on Windows; keep it covered.

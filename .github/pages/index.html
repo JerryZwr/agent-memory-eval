@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agent-memory-eval 报告</title>
+<style>
+:root { --bg: #ffffff; --fg: #1d2330; --muted: #5d6675; --line: #dfe3ea; --accent: #1a6f8a; }
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #12151b; --fg: #e4e8ef; --muted: #9aa3b2; --line: #2b313c; --accent: #5cb3cc; }
+}
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 16px/1.6 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+main { max-width: 760px; margin: 0 auto; padding: 40px 16px; }
+h1 { font-size: 26px; margin: 0 0 8px; }
+p { color: var(--muted); }
+a.card { display: block; border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px;
+  margin: 14px 0; color: var(--fg); text-decoration: none; }
+a.card:hover { border-color: var(--accent); }
+a.card strong { color: var(--accent); font-size: 18px; }
+</style>
+</head>
+<body>
+<main>
+<h1>agent-memory-eval</h1>
+<p>AI 记忆系统与 Agent 评测框架。两份报告都由 CI 从仓库内容离线生成（合成语料，无 API key）。</p>
+<a class="card" href="report/"><strong>评测报告</strong><br>
+  null 对照组 vs bm25：带 95% 区间的总表、配对 McNemar 检验、按题型 / 证据范围拆分、检索 × 判分 2×2、逐题明细。</a>
+<a class="card" href="allure/"><strong>Allure 测试报告</strong><br>
+  框架自测 + 记忆层逐题用例：按 epic / feature 浏览，失败带检索结果与判分理由，按产品缺陷 / 测试缺陷 / 环境故障分类，带历史趋势。</a>
+<p><a href="https://github.com/JerryZwr/agent-memory-eval">源代码</a></p>
+</main>
+</body>
+</html>

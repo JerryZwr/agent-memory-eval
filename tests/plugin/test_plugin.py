@@ -375,7 +375,11 @@ def test_missing_baseline_file_is_a_usage_error(pytester):
 def test_allure_environment_and_categories_are_written(pytester):
     pytester.makepyfile("def test_x():\n    pass\n")
     alluredir = pytester.path / "allure-results"
-    pytester.runpytest(f"--alluredir={alluredir}").assert_outcomes(passed=1)
+    # Subprocess: allure-pytest keeps global listener state, so an in-process inner
+    # session with its own --alluredir collides with (and leaks into) an outer session
+    # that is itself writing Allure results, as the Pages workflow's does.
+    result = pytester.runpytest_subprocess(f"--alluredir={alluredir}")
+    result.assert_outcomes(passed=1)
     env = (alluredir / "environment.properties").read_text(encoding="ascii")
     assert "eval_arm=bm25" in env
     assert "round_status=measured" in env

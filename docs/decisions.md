@@ -109,3 +109,10 @@ M0 核实许可证时顺带确认了数据结构。**这条不改 METHODOLOGY �
 - **为什么**：只用日期判据会把“同一天的无关消息”算成命中，在每天消息很多的真实语料上偏宽；只用消息判据则 mem0 一类的 arm 无法计算。并列报告让读者看到两种口径是否给出同一个结论。
 - **这不是定义改动**：METHODOLOGY 的结局分类、窗口分类、统计方法都没有变，只是把一个未写明的判据写明。
 - **相关的小改动**：合成语料把 F_MH_Mini_001 的第二条证据移到另一个群，使“跨群”这一证据范围在离线 demo 里有样本（`corpus_id` 随之改变；此前没有冻结过基于它的结果）。
+
+## D-007 · 2026-10-19 · pytest 插件放在 `src/pytest_agenteval/`，用 entry point 加载
+
+- **决定**：插件是独立的顶层包 `pytest_agenteval`，放在 `src/` 下与 `agentmemeval` 并列，由 uv_build 一起打包（`module-name = ["agentmemeval", "pytest_agenteval"]`），通过 `pytest11` entry point 自动加载。CLAUDE.md §4 的架构图里它画在仓库根目录。
+- **为什么**：放在 `src/` 下才能被打包和安装，entry point 才能生效（METHODOLOGY 3.1 允许 `-p` 或 entry point 两种加载方式）；放在根目录则只能靠 `pythonpath` + `-p` 加载，安装后的包里也不会有它。它仍然是独立的包目录，只依赖 `agentmemeval` 的公开模块。
+- **另外**：`tests/eval/` 里的逐题用例是测量而不是门禁（被测系统答错时用例失败），所以不在默认 `testpaths` 里，需要显式运行 `uv run pytest tests/eval`。默认的 `uv run pytest` 只跑框架自测（`tests/unit`、`tests/plugin`），必须全绿。
+- **影响**：无已有结果。
