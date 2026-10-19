@@ -17,7 +17,7 @@ pipeline can classify them as `env_failure`.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -34,10 +34,15 @@ class RetrievedItem(BaseModel):
     speaker: str
     text: str
     score: float
+    # "message": a source message itself (bm25). "memory": something the system extracted
+    # (mem0); it has a date but no single source message, so message-level hits don't apply.
+    kind: Literal["message", "memory"] = "message"
 
 
 class MemoryArm(ABC):
     name: ClassVar[str]
+    # False for the control arm: it stores nothing by design, so write/corpus probes don't apply.
+    stores_data: ClassVar[bool] = True
 
     @abstractmethod
     def params(self) -> dict[str, Any]:
@@ -54,3 +59,6 @@ class MemoryArm(ABC):
     @abstractmethod
     def search(self, query: str, top_k: int) -> list[RetrievedItem]:
         """Ranked results, best first. Empty if nothing relevant."""
+
+    def close(self) -> None:  # noqa: B027 - optional hook
+        """Release resources (file locks, connections). Default: nothing to release."""

@@ -41,10 +41,17 @@ CRITERION_LABELS = {
 
 
 def retrieval_hit(search: SearchRecord, question: Question, criterion: HitCriterion) -> bool | None:
-    """Did retrieval reach the evidence? None when the question has no located evidence."""
+    """Did retrieval reach the evidence?
+
+    None when it cannot be judged: the question has no located evidence, or the
+    criterion is message-level and the arm returns extracted memories rather than
+    messages (a "miss" there would be an artefact of the criterion, not a finding).
+    """
     if question.evidence_status is not EvidenceStatus.LOCATED:
         return None
     if criterion is HitCriterion.MESSAGE:
+        if any(item.kind != "message" for item in search.items):
+            return None
         wanted = set(question.evidence_ids)
         return any(item.message_id in wanted for item in search.items)
     days = set(question.evidence_dates)
@@ -70,6 +77,7 @@ class TwoByTwo:
     miss_correct: int  # guessed or general knowledge: not credit for memory
     miss_wrong: int  # retrieval problem
     not_delivered: int  # excluded: no verdict to cross with
+    not_applicable: int = 0  # excluded: the criterion cannot judge this arm's results
 
     @property
     def n(self) -> int:
@@ -84,7 +92,7 @@ def two_by_two(
 ) -> TwoByTwo:
     by_qid = {s.qid: s for s in search}
     cells = {"hit_correct": 0, "hit_wrong": 0, "miss_correct": 0, "miss_wrong": 0}
-    not_delivered = 0
+    not_delivered = not_applicable = 0
     for j in judged:
         q = questions[j.qid]
         if q.evidence_status is not EvidenceStatus.LOCATED:
@@ -93,8 +101,13 @@ def two_by_two(
             not_delivered += 1
             continue
         hit = retrieval_hit(by_qid[j.qid], q, criterion)
+        if hit is None:
+            not_applicable += 1
+            continue
         cells[f"{'hit' if hit else 'miss'}_{'correct' if j.verdict == 'CORRECT' else 'wrong'}"] += 1
-    return TwoByTwo(criterion=criterion, not_delivered=not_delivered, **cells)
+    return TwoByTwo(
+        criterion=criterion, not_delivered=not_delivered, not_applicable=not_applicable, **cells
+    )
 
 
 def by_qtype(judged: Sequence[JudgeRecord]) -> dict[str, Tally]:

@@ -163,7 +163,7 @@ svg .whisker { stroke: var(--fg); stroke-width: 1.5; }
 <tr><th>命中</th><td>{{ t.hit_correct }}<span class="cellnote">记忆带来的正确</span></td><td>{{ t.hit_wrong }}<span class="cellnote">阅读 / 推理问题</span></td></tr>
 <tr><th>未命中</th><td>{{ t.miss_correct }}<span class="cellnote">猜对或靠常识</span></td><td>{{ t.miss_wrong }}<span class="cellnote">检索问题</span></td></tr>
 </table>
-<p class="note">共 {{ t.n }} 题；未交付而不计入 {{ t.not_delivered }} 题。</p>
+<p class="note">共 {{ t.n }} 题；未交付而不计入 {{ t.not_delivered }} 题{% if t.not_applicable %}；<strong>{{ t.not_applicable }} 题不适用</strong>（该 arm 返回的是抽取后的记忆而非原始消息，只能按日期判定命中）{% endif %}。</p>
 </div>
 {% endfor %}{% endfor %}
 </div>

@@ -15,6 +15,7 @@ from agentmemeval.data.models import Dataset
 
 class NullArm(MemoryArm):
     name = "null"
+    stores_data = False
 
     def params(self) -> dict[str, Any]:
         return {}
