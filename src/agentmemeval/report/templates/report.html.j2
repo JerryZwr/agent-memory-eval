@@ -168,6 +168,65 @@ svg .whisker { stroke: var(--fg); stroke-width: 1.5; }
 {% endfor %}{% endfor %}
 </div>
 
+{% if agent %}
+<h2>Agent 层指标 {{ small_flag() }}</h2>
+<p class="note">同一份语料上，用 {{ agent.summaries | length }} 种脚本化策略驱动同一个极简 Agent：<code>good</code> 是参照，其余每种模拟一种已知缺陷（METHODOLOGY 2.1）。
+任务：{% for k, n in agent.task_kinds.items() %}{{ k }} {{ n }} 题{% if not loop.last %}、{% endif %}{% endfor %}。
+预算：最多 {{ agent.budget.max_iterations }} 轮、{{ agent.budget.max_tool_calls }} 次工具调用、同一工具连续 {{ agent.budget.max_same_tool_streak }} 次、{{ agent.budget.wall_clock_s }} 秒。
+所有检查（交付、收敛、路由、回退、轨迹、trace 完整性）与 <code>tests/agent</code> 用的是同一份判据代码。</p>
+
+<h3>交付、预算与正确率</h3>
+<div class="table-wrap"><table>
+<tr><th>策略</th><th>n</th><th>交付率</th><th>预算触发率</th><th>答案正确率</th><th>端到端成功率</th><th>环境故障</th><th>Agent 错误</th><th>未通过的检查（题数）</th></tr>
+{% for s in agent.summaries %}
+<tr><td><code>{{ s.policy }}</code></td><td class="num">{{ s.n }}</td><td>{{ rate(s.delivery) }}</td><td>{{ rate(s.budget_hit) }}</td>
+<td>{{ rate(s.accuracy) }}</td><td>{{ rate(s.end_to_end) }}</td><td class="num">{{ s.env_failure }}</td><td class="num">{{ s.agent_error }}</td>
+<td>{% for k, n in s.check_failures.items() if n %}{{ agent.check_labels[k] }} {{ n }}{% if not loop.last %}，{% endif %}{% else %}无{% endfor %}</td></tr>
+{% endfor %}
+</table></div>
+<p class="note">答案正确率与端到端成功率只统计有标准答案的题（记忆类与 web 类）；闲聊题只看交付与路由。</p>
+
+<h3>工具调用分布（总次数 / 平均每题）</h3>
+<div class="table-wrap"><table>
+<tr><th>策略</th>{% for t in agent.tools %}<th>{{ t }}</th>{% endfor %}</tr>
+{% for s in agent.summaries %}
+<tr><td><code>{{ s.policy }}</code></td>{% for t in agent.tools %}<td class="num">{{ s.tool_calls.get(t, 0) }} / {{ "%.2f" | format(s.tool_calls_per_task.get(t, 0)) }}</td>{% endfor %}</tr>
+{% endfor %}
+</table></div>
+
+<h3>路由混淆矩阵（行 = 按 Agent 自己声明的规则得出的期望路由，列 = 第一次路由决定）</h3>
+<div class="cards">
+{% for s in agent.summaries %}
+<div class="card">
+<h3><code>{{ s.policy }}</code></h3>
+<table class="grid2">
+<tr><th>期望 \ 实际</th>{% for r in agent.routes %}<th>{{ r }}</th>{% endfor %}</tr>
+{% for e in agent.routes %}<tr><th>{{ e }}</th>{% for a in agent.routes %}<td>{{ s.confusion.get(e, {}).get(a, 0) }}</td>{% endfor %}</tr>
+{% endfor %}
+</table>
+<p class="note">{% for r in agent.routes %}{{ r }}：精确率 {{ s.precision_recall.get(r, (0, 0))[0] | pct }}，召回率 {{ s.precision_recall.get(r, (0, 0))[1] | pct }}{% if not loop.last %}；{% endif %}{% endfor %}</p>
+</div>
+{% endfor %}
+</div>
+
+<h3>耗时拆解（平均每题）</h3>
+{% if agent.clock == "simulated" %}
+<p class="note"><span class="flag">模拟耗时</span> 下列数字来自虚拟时钟按固定成本推进（LLM 每次 {{ agent.latency.llm_s }} s、首 token {{ agent.latency.ttft_s }} s，memory_search {{ agent.latency.memory_s }} s，web_search {{ agent.latency.web_s }} s，框架每轮 {{ agent.latency.framework_s }} s），
+只用于演示“三段拆解 + TTFT”的方法，不是实测值。</p>
+{% endif %}
+<div class="table-wrap"><table>
+<tr><th>策略</th><th>总耗时 ms</th><th>LLM ms（占比）</th><th>工具 ms（占比）</th><th>框架 ms（占比）</th><th>平均 TTFT ms</th></tr>
+{% for s in agent.summaries %}
+<tr><td><code>{{ s.policy }}</code></td><td class="num">{{ s.latency_ms.total_ms }}</td>
+<td class="num">{{ s.latency_ms.llm_ms }}（{{ s.latency_shares.llm | pct }}）</td>
+<td class="num">{{ s.latency_ms.tool_ms }}（{{ s.latency_shares.tool | pct }}）</td>
+<td class="num">{{ s.latency_ms.framework_ms }}（{{ s.latency_shares.framework | pct }}）</td>
+<td class="num">{{ s.mean_ttft_ms if s.mean_ttft_ms is not none else "—" }}</td></tr>
+{% endfor %}
+</table></div>
+<p class="note">框架 = 总耗时 − LLM − 工具：轮次调度、上下文组装、序列化。只拆成 LLM 和工具两段会把这部分藏起来（METHODOLOGY 2.3 第 9 项）。</p>
+{% endif %}
+
 <h2>逐题明细</h2>
 <p class="note">点开查看题目、标准答案、各 arm 的答案、判分理由和检索返回的前几条（✔ = 证据消息）。</p>
 {% for qv in questions %}

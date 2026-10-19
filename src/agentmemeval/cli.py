@@ -1,7 +1,7 @@
 """Command-line entry point (`agentmemeval`).
 
-Subcommands are added milestone by milestone (see PLAN.md): `demo` and `run`
-in M1, `report` and `baseline` in M2, `agent-eval` in M4.
+Subcommands: `demo` and `run` (M1), `report` and `baseline` (M2), `agent-eval` (M4).
+`report --run <dir>` also includes agent results found in `<dir>/agent/`.
 """
 
 from __future__ import annotations
@@ -58,9 +58,15 @@ def cmd_demo(args: argparse.Namespace) -> int:
         results.append(run_pipeline(out / arm, config, on_stage=_print_stage(arm)))
     print()
     print(format_results(results))
-    print()
-    from agentmemeval.report.build import write_report
+    from agentmemeval.agent.eval import find_agent_runs, run_all, summarize, summary_lines
+    from agentmemeval.pipeline.config import build_components
+    from agentmemeval.report.build import AGENT_DIR, write_report
 
+    agent_dir = out / AGENT_DIR
+    if not find_agent_runs(agent_dir):
+        run_all(build_components(results[-1].components.config), agent_dir)
+    print("Agent layer: 6 scripted policies on the same corpus (simulated clock)")
+    print("\n".join(summary_lines([summarize(r) for r in find_agent_runs(agent_dir)])))
     report = write_report(out, open_browser=args.open)
     print()
     print(f"Done in {time.perf_counter() - started:.1f}s. Stage files: {out}")
@@ -78,6 +84,35 @@ def cmd_run(args: argparse.Namespace) -> int:
     result = run_pipeline(run_dir, force=args.force_stage, on_stage=_print_stage(run_dir.name))
     print()
     print(format_results([result]))
+    return 0
+
+
+def cmd_agent_eval(args: argparse.Namespace) -> int:
+    from agentmemeval.agent.eval import (
+        find_agent_runs,
+        run_agent_eval,
+        summarize,
+        summary_lines,
+        write_agent_run,
+    )
+    from agentmemeval.agent.policies import POLICIES
+    from agentmemeval.pipeline.config import RunConfig, build_components, default_eval_config
+
+    if args.eval_config:
+        config = RunConfig.model_validate_json(Path(args.eval_config).read_text(encoding="utf-8"))
+    else:
+        config = default_eval_config()
+    components = build_components(config)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    out = Path(args.out) if args.out else Path("runs") / f"agent-{stamp}"
+    for policy in args.policy or list(POLICIES):
+        run = run_agent_eval(
+            policy, components, real_clock=args.real_clock, run_id=f"{out.name}-{policy}"
+        )
+        write_agent_run(out / f"{policy}.json", run)
+    clock = "real clock" if args.real_clock else "simulated clock"
+    print(f"Agent evaluation on {components.meta.corpus_id} ({clock}) -> {out}")
+    print("\n".join(summary_lines([summarize(r) for r in find_agent_runs(out)])))
     return 0
 
 
@@ -138,6 +173,21 @@ def build_parser() -> argparse.ArgumentParser:
     demo.add_argument("--fixture", default=str(DEFAULT_FIXTURE), help="synthetic corpus directory")
     demo.add_argument("--open", action="store_true", help="open the HTML report in a browser")
     demo.set_defaults(func=cmd_demo)
+
+    agent = sub.add_parser("agent-eval", help="run the agent over the task set with each policy")
+    agent.add_argument("--out", help="output directory (default: runs/agent-<timestamp>)")
+    agent.add_argument(
+        "--policy",
+        action="append",
+        choices=["good", "stubborn_searcher", "skips_memory", "narrator", "misrouted",
+                 "acknowledger"],
+        help="policy to run (repeatable; default: all six)",
+    )  # fmt: skip
+    agent.add_argument("--eval-config", help="run configuration (run.json format)")
+    agent.add_argument(
+        "--real-clock", action="store_true", help="measure wall time instead of simulated latency"
+    )
+    agent.set_defaults(func=cmd_agent_eval)
 
     report = sub.add_parser("report", help="build the HTML evaluation report from finished runs")
     report.add_argument(

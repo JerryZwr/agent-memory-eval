@@ -67,3 +67,20 @@ def test_baseline_cli_freeze_refuse_overwrite_and_diff(demo, tmp_path, capsys):
     assert "OverwriteRefusedError" in capsys.readouterr().err
     assert main(["baseline", "diff", "--run", str(out / "bm25"), "--baseline", str(path)]) == 0
     assert "unchanged=16" in capsys.readouterr().out
+
+
+def test_demo_also_runs_the_agent_evaluation(demo):
+    out, _, _ = demo
+    assert sorted(p.stem for p in (out / "agent").glob("*.json")) == sorted(
+        ["good", "stubborn_searcher", "skips_memory", "narrator", "misrouted", "acknowledger"]
+    )
+
+
+def test_agent_eval_command(tmp_path, capsys):
+    assert (
+        main(["agent-eval", "--out", str(tmp_path), "--policy", "good", "--policy", "narrator"])
+        == 0
+    )
+    out = capsys.readouterr().out
+    assert "simulated clock" in out
+    assert sorted(p.stem for p in tmp_path.glob("*.json")) == ["good", "narrator"]

@@ -146,3 +146,42 @@ def test_cli_report_command(demo, tmp_path, capsys):
     assert main(["report", "--run", str(root), "--out", str(out)]) == 0
     assert out.is_file()
     assert "Report:" in capsys.readouterr().out
+
+
+@pytest.fixture(scope="module")
+def with_agent(tmp_path_factory):
+    from agentmemeval.agent.eval import run_all
+    from agentmemeval.pipeline.config import build_components
+
+    root = tmp_path_factory.mktemp("report-agent")
+    for arm in ("null", "bm25"):
+        run_pipeline(root / arm, _cfg(arm))
+    run_all(build_components(_cfg("bm25")), root / "agent", policies=["good", "misrouted"])
+    return root, write_report(root).read_text(encoding="utf-8")
+
+
+def test_agent_section_has_the_required_metrics(with_agent):
+    _, html = with_agent
+    for heading in (
+        "Agent 层指标",
+        "交付率",
+        "预算触发率",
+        "工具调用分布",
+        "路由混淆矩阵",
+        "耗时拆解",
+    ):
+        assert heading in html, heading
+    assert "模拟耗时" in html  # simulated timings are labelled as such
+    assert "框架 ms" in html  # three-way split, not two
+    bad = [r for r in RATE.findall(html) if not RATE_FORMAT.match(r)]
+    assert bad == []
+
+
+def test_agent_results_from_another_corpus_are_refused(tmp_path):
+    from agentmemeval.agent.eval import run_all
+    from agentmemeval.pipeline.config import build_components
+
+    run_pipeline(tmp_path / "bm25", _cfg("bm25"))
+    run_all(build_components(_cfg("bm25", first_days=2)), tmp_path / "agent", policies=["good"])
+    with pytest.raises(IncomparableError, match="agent run good used corpus"):
+        write_report(tmp_path)

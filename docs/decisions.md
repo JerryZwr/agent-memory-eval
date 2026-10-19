@@ -116,3 +116,16 @@ M0 核实许可证时顺带确认了数据结构。**这条不改 METHODOLOGY �
 - **为什么**：放在 `src/` 下才能被打包和安装，entry point 才能生效（METHODOLOGY 3.1 允许 `-p` 或 entry point 两种加载方式）；放在根目录则只能靠 `pythonpath` + `-p` 加载，安装后的包里也不会有它。它仍然是独立的包目录，只依赖 `agentmemeval` 的公开模块。
 - **另外**：`tests/eval/` 里的逐题用例是测量而不是门禁（被测系统答错时用例失败），所以不在默认 `testpaths` 里，需要显式运行 `uv run pytest tests/eval`。默认的 `uv run pytest` 只跑框架自测（`tests/unit`、`tests/plugin`），必须全绿。
 - **影响**：无已有结果。
+
+## D-008 · 2026-10-19 · Agent 层结局判定的细则
+
+METHODOLOGY 1.4 / 2.1 定义了 delivered / undelivered / env_failure / agent_error，下面是实现时补充的细则，**不改变定义**，只把没写明的情况写明（`agent/core.py`，均有测试）：
+
+1. **确认语不结束运行**：通过 `final_answer` 发出的确认或占位语（“收到，稍后汇报”）不算答案，循环继续，给真正的答案留出机会。之后在预算内来了真实答案 → `delivered`；始终只有确认 → `undelivered`（acknowledgement）。这对应 1.4 的“交付动作产出的也不一定是答案”和“最后一条可能只是确认”，两个方向都有用例。
+2. **工具故障**：工具超时、服务报错（基础设施）或返回格式不符（malformed）之后，Agent 没能恢复就结束 → `env_failure`；重试成功 → 按答案正常判定，并记一条警告（重试不能静默，3.4）。
+3. **调用不存在的工具是 Agent 自己的错**：记为 `unknown_tool`，不算环境故障，最终按 `undelivered` 等正常规则判定。
+4. **LLM 端点故障** → `env_failure`；**Agent 自身代码或策略抛出异常** → `agent_error`，两者分开计数。
+5. **路由**：以第一次路由决定为准；期望标签来自 Agent 自己声明的规则（`ROUTING_RULE`：需要历史对话的问题必须走 memory），不依赖评测者的主观判断。
+6. **耗时**：批量评测默认用虚拟时钟按固定成本推进（`SimulatedLatency`），结果文件元数据记录 `clock: simulated` 及各项成本，报告在耗时旁标注“模拟耗时”。`--real-clock` 改为测量真实耗时，此时不伪造 TTFT（非流式调用记为空）。
+
+**影响**：无已有结果。

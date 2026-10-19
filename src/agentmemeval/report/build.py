@@ -17,6 +17,7 @@ from jinja2 import Environment, PackageLoader, StrictUndefined
 from markupsafe import Markup
 
 from agentmemeval import __version__
+from agentmemeval.agent.eval import AgentRunFile, find_agent_runs, summarize
 from agentmemeval.analysis.breakdown import (
     CRITERION_LABELS,
     HitCriterion,
@@ -32,7 +33,7 @@ from agentmemeval.analysis.stats import SMALL_SAMPLE
 from agentmemeval.analysis.windows import DESCRIPTIONS, WindowClass, class_counts, scored_classes
 from agentmemeval.console import check_comparable
 from agentmemeval.data.models import QTYPE_LABELS, Question
-from agentmemeval.errors import StageError
+from agentmemeval.errors import IncomparableError, StageError
 from agentmemeval.pipeline.records import STAGES, JudgeRecord, SearchRecord
 from agentmemeval.pipeline.runner import RUN_CONFIG, LoadedRun, load_run
 from agentmemeval.provenance import git_commit, utc_now
@@ -198,7 +199,47 @@ def _limitations(runs: list[LoadedRun], arms: list[ArmView], include_b: bool) ->
     return out
 
 
-def build_context(runs: list[LoadedRun]) -> dict[str, Any]:
+AGENT_DIR = "agent"
+CHECK_LABELS = {
+    "delivered": "交付",
+    "converged": "收敛",
+    "route": "路由",
+    "fallback": "回退",
+    "trajectory": "轨迹",
+    "trace": "trace 完整性",
+}
+
+
+def _agent_context(agent_runs: list[AgentRunFile], corpus_id: str) -> dict[str, Any] | None:
+    if not agent_runs:
+        return None
+    for run in agent_runs:
+        if run.meta.corpus_id != corpus_id:
+            raise IncomparableError(
+                f"agent run {run.meta.policy} used corpus {run.meta.corpus_id}, "
+                f"the memory runs used {corpus_id}"
+            )
+    kinds: dict[str, int] = {}
+    for rec in agent_runs[0].parsed():
+        kinds[rec.kind] = kinds.get(rec.kind, 0) + 1
+    summaries = [summarize(r) for r in agent_runs]
+    first = agent_runs[0].meta
+    return {
+        "summaries": summaries,
+        "tools": sorted({t for s in summaries for t in s.tool_calls}),
+        "routes": ["memory", "web", "chitchat"],
+        "check_labels": CHECK_LABELS,
+        "budget": first.budget,
+        "clock": first.clock,
+        "latency": first.simulated_latency,
+        "task_kinds": kinds,
+        "agent_model_prefix": first.agent_model.split("/")[0],
+    }
+
+
+def build_context(
+    runs: list[LoadedRun], agent_runs: list[AgentRunFile] | None = None
+) -> dict[str, Any]:
     if not runs:
         raise StageError("no runs to report on")
     runs = sorted(runs, key=_arm_order)
@@ -254,6 +295,7 @@ def build_context(runs: list[LoadedRun]) -> dict[str, Any]:
         "small_threshold": SMALL_SAMPLE,
         "stages": STAGES,
         "overall": [(a.name, tally(a.run.judge_records)) for a in arms],
+        "agent": _agent_context(agent_runs or [], runs[0].meta.corpus_id),
     }
 
 
@@ -278,9 +320,10 @@ def render(context: dict[str, Any]) -> str:
 def write_report(path: Path, out: Path | None = None, *, open_browser: bool = False) -> Path:
     run_dirs = find_run_dirs(path)
     runs = [load_run(d) for d in run_dirs]
+    agent_runs = find_agent_runs(path / AGENT_DIR)
     target = out or (path / REPORT_NAME if len(run_dirs) > 1 else run_dirs[0] / REPORT_NAME)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(render(build_context(runs)), encoding="utf-8", newline="\n")
+    target.write_text(render(build_context(runs, agent_runs)), encoding="utf-8", newline="\n")
     if open_browser:
         webbrowser.open(target.resolve().as_uri())
     return target
