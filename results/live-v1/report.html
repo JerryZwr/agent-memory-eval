@@ -1,0 +1,2670 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agent-memory-eval 评测报告</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #1d2330; --muted: #5d6675; --line: #dfe3ea; --panel: #f6f8fb;
+  --accent: #1a6f8a; --control: #9aa4b2; --good: #1e7a46; --bad: #b3261e; --warn: #8a5a00;
+  --warn-bg: #fff4dc; --bad-bg: #fde8e6; --good-bg: #e5f4ea;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151b; --fg: #e4e8ef; --muted: #9aa3b2; --line: #2b313c; --panel: #1a1f27;
+    --accent: #5cb3cc; --control: #6b7482; --good: #6fcf97; --bad: #f28b82; --warn: #f0c36d;
+    --warn-bg: #3a2f17; --bad-bg: #3b1d1b; --good-bg: #183225;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg);
+  font: 15px/1.6 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+h1 { font-size: 26px; margin: 0 0 4px; }
+h2 { font-size: 20px; margin: 40px 0 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+h3 { font-size: 16px; margin: 20px 0 6px; }
+p, li { max-width: 80ch; }
+.sub { color: var(--muted); margin: 0 0 16px; }
+.note { color: var(--muted); font-size: 13px; }
+.flag { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 12px;
+  background: var(--warn-bg); color: var(--warn); margin-left: 6px; white-space: nowrap; }
+.table-wrap { overflow-x: auto; margin: 8px 0; }
+table { border-collapse: collapse; font-size: 14px; min-width: 100%; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: var(--panel); font-weight: 600; white-space: nowrap; }
+td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rate { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rate.small { color: var(--muted); }
+.badge { display: inline-block; padding: 0 6px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+.CORRECT { background: var(--good-bg); color: var(--good); }
+.WRONG { background: var(--bad-bg); color: var(--bad); }
+.none { background: var(--panel); color: var(--muted); }
+.verdict { font-weight: 600; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.card h3 { margin-top: 0; }
+.grid2 td { text-align: center; width: 33%; }
+.grid2 .cellnote { display: block; color: var(--muted); font-size: 12px; }
+details { border: 1px solid var(--line); border-radius: 6px; margin: 6px 0; background: var(--bg); }
+summary { cursor: pointer; padding: 6px 10px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+details[open] summary { border-bottom: 1px solid var(--line); background: var(--panel); }
+.detail-body { padding: 8px 12px; }
+.detail-body pre { white-space: pre-wrap; word-break: break-word; background: var(--panel);
+  padding: 8px; border-radius: 4px; font-size: 13px; margin: 4px 0; }
+.items li { font-size: 13px; }
+.hit { color: var(--good); font-weight: 600; }
+code { font-size: 13px; }
+svg.chart { width: 100%; max-width: 560px; height: auto; display: block; margin: 8px 0; }
+svg .grid { stroke: var(--line); }
+svg .tick, svg .label, svg .value { fill: var(--muted); font-size: 12px; }
+svg .label { fill: var(--fg); }
+svg .bar { fill: var(--accent); }
+svg .bar.control { fill: var(--control); }
+svg .whisker { stroke: var(--fg); stroke-width: 1.5; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>agent-memory-eval 评测报告</h1>
+<p class="sub">
+  语料 <code>emb-004@a1607d39c0:2025-01-09..2025-05-14</code> · 答题 <code>deepseek-flash+thinking=off</code>（answer-v1）
+  · 评分员 <code>deepseek-v4-pro+thinking=off</code>（llm-v1）<br>
+  生成于 2026-10-19T16:30:02+00:00 · agentmemeval 0.1.0 @ 8c06114bb634+dirty
+</p>
+
+<h2>结论与局限</h2>
+<p>下面每个比率都写成 <code>答对数/分母 = 百分比 [95% Wilson 区间]</code>。
+两个 arm 之间的差异只在配对检验显著时才说“高于 / 低于”。</p>
+<ul>
+  <li><strong>A 类：证据在窗口内</strong>：bm25 高于 null（配对 McNemar 精确检验 p &lt; 0.001）。配对题数 110，
+    答对率差 +26%（bootstrap 95% 区间 [+16%, +36%]）。</li>
+  <li><strong>D 类：无证据（应拒答）</strong>：bm25 高于 null（配对 McNemar 精确检验 p = 0.001）。配对题数 78，
+    答对率差 +19%（bootstrap 95% 区间 [+9%, +29%]）。</li>
+  <li><strong>A 类：证据在窗口内</strong>：mem0 高于 null（配对 McNemar 精确检验 p &lt; 0.001）。配对题数 110，
+    答对率差 +33%（bootstrap 95% 区间 [+24%, +42%]）。</li>
+  <li><strong>D 类：无证据（应拒答）</strong>：mem0 高于 null（配对 McNemar 精确检验 p &lt; 0.001）。配对题数 78，
+    答对率差 +23%（bootstrap 95% 区间 [+12%, +35%]）。</li>
+</ul>
+<h3>局限</h3>
+<ul>
+<li>开放题评分员是 LLM（deepseek-v4-pro+thinking=off，口径 llm-v1），未经人工校准：没有人工标注，也不报告任何人工一致性数字（D-009）。v1 与 v2 两个口径之间的一致性只说明规则改动影响了哪些判定，不说明哪个口径更接近人的判断。</li>
+<li>真实模型温度为 0、关闭思考模式，但服务端仍可能有非确定性；同一题重跑结果可能不同。结论依据的是本次运行的结果文件。</li>
+<li>真实被测记忆系统只有 mem0 一个（EverOS 未做，D-009），无法给出两个真实系统之间的比较。</li>
+<li>mem0 在本次运行中只用了向量检索：它的混合检索（spaCy 词形归一、fastembed 关键词检索）需要额外安装 mem0ai[nlp] / mem0ai[extras]，运行环境里没有装，mem0 自己打印了警告（D-011）。结论只适用于这个配置。</li>
+<li>mem0 存的是抽取后的记忆而不是原始消息，因此“命中证据消息”判据对它不适用，只按“命中证据当天”判定，这个判据比 bm25 的消息级判据宽松，二者的命中率不能直接比较。</li>
+<li>D 类（无证据题）的分数不能跨语料规模比较：库越小，“正确地说不知道”越容易。</li>
+<li>B 类（证据跨窗口边界）默认不提问、不计分；需要时在运行配置里显式打开。</li>
+<li>“检索命中”按证据判定，给出两种口径：命中证据消息（严格）和命中证据所在的日期（宽松）；不以“返回非空”判定命中。</li>
+</ul>
+
+<h2>运行状态与费用</h2>
+<p class="note">真实运行前后都跑环境探针（METHODOLOGY 1.11）：灌入前检查 LLM 可达、记忆服务可写（写入临时命名空间），灌入后选定一道能检索到证据的“金丝雀”题，运行结束后复查同一道题。后置探针变红时，整轮结果标为未测到。</p>
+<div class="table-wrap"><table>
+<tr><th>arm</th><th>整轮状态</th><th>前置探针</th><th>灌入后</th><th>后置探针</th></tr>
+<tr><td>null</td>
+<td><span class="badge CORRECT">已测量</span></td>
+<td>llm=pass，memory_service=pass</td><td>memory_service=pass，corpus=pass</td><td>llm=pass，memory_service=pass，corpus=pass</td></tr>
+<tr><td>bm25</td>
+<td><span class="badge CORRECT">已测量</span></td>
+<td>llm=pass，memory_service=pass</td><td>memory_service=pass，corpus=pass</td><td>llm=pass，memory_service=pass，corpus=pass</td></tr>
+<tr><td>mem0</td>
+<td><span class="badge CORRECT">已测量</span></td>
+<td>llm=pass，memory_service=pass</td><td>memory_service=pass，corpus=pass</td><td>llm=pass，memory_service=pass，corpus=pass</td></tr>
+</table></div>
+<p>付费调用 <strong>1576</strong> 次，按官方高峰价计费 <strong>¥5.61</strong>（上限 1000000000 次 / ¥1000000000）；缓存命中 71 次，重试 2 次，最终失败 0 次。
+输入 3346421 token（其中服务端缓存命中 2209920），输出 276397 token。数字来自会话的调用账本 <code>usage.jsonl</code>。</p>
+<div class="table-wrap"><table>
+<tr><th>用途</th><th>调用次数</th><th>费用 ¥</th></tr>
+<tr><td>agent</td><td class="num">140</td><td class="num">0.2128</td></tr>
+<tr><td>answer</td><td class="num">564</td><td class="num">0.7546</td></tr>
+<tr><td>judge-v1</td><td class="num">304</td><td class="num">0.7466</td></tr>
+<tr><td>judge-v2</td><td class="num">304</td><td class="num">0.6405</td></tr>
+<tr><td>mem0-extract</td><td class="num">254</td><td class="num">3.2489</td></tr>
+<tr><td>probe</td><td class="num">10</td><td class="num">0.0075</td></tr>
+</table></div>
+
+<h2>计分范围</h2>
+<p>灌入的天数：2025-01-09 至 2025-05-14（90 天，3404 条消息）。
+题目覆盖整个语料期，只提问、计分证据窗口允许的类别（METHODOLOGY 1.3）。</p>
+<div class="table-wrap"><table>
+<tr><th>类别</th><th>含义</th><th>题数</th><th>是否提问 / 计分</th></tr>
+<tr><td>A</td><td>证据全部在已灌入的天数内</td><td class="num">110</td><td>是</td></tr>
+<tr><td>B</td><td>证据跨越窗口边界（材料残缺）</td><td class="num">51</td><td>否</td></tr>
+<tr><td>C</td><td>证据全部在窗口外</td><td class="num">283</td><td>否</td></tr>
+<tr><td>D</td><td>无证据题（正确答案是“没有发生 / 不知道”）</td><td class="num">78</td><td>是</td></tr>
+<tr><td>E</td><td>证据位置无法恢复</td><td class="num">104</td><td>否</td></tr>
+<tr><td>F</td><td>数据集标为范围未知</td><td class="num">0</td><td>否</td></tr>
+</table></div>
+
+<h2>总表 </h2>
+<p class="note">答案正确率 = 答对 / 已交付；端到端成功率 = 答对 / (已交付 + 未交付)。环境故障两个分母都不计入，单独列出（METHODOLOGY 1.4）。
+歧义提取 = 选择题答案里的字母需要从文本里“搜”出来，或出现多个字母。</p>
+<div class="table-wrap"><table>
+<tr><th>arm</th><th>题目类别</th><th>n</th><th>已交付</th><th>未交付</th><th>环境故障</th><th>歧义提取</th><th>答案正确率</th><th>端到端成功率</th></tr>
+<tr><td>null</td><td>A 类：证据在窗口内</td><td class="num">110</td><td class="num">110</td>
+<td class="num">0</td><td class="num">0</td><td class="num">0</td>
+<td><span class="rate">30/110 = 27% [20%, 36%]</span></td><td><span class="rate">30/110 = 27% [20%, 36%]</span></td></tr>
+<tr><td>null</td><td>D 类：无证据（应拒答）</td><td class="num">78</td><td class="num">78</td>
+<td class="num">0</td><td class="num">0</td><td class="num">0</td>
+<td><span class="rate">47/78 = 60% [49%, 70%]</span></td><td><span class="rate">47/78 = 60% [49%, 70%]</span></td></tr>
+<tr><td>bm25</td><td>A 类：证据在窗口内</td><td class="num">110</td><td class="num">110</td>
+<td class="num">0</td><td class="num">0</td><td class="num">2</td>
+<td><span class="rate">59/110 = 54% [44%, 63%]</span></td><td><span class="rate">59/110 = 54% [44%, 63%]</span></td></tr>
+<tr><td>bm25</td><td>D 类：无证据（应拒答）</td><td class="num">78</td><td class="num">78</td>
+<td class="num">0</td><td class="num">0</td><td class="num">0</td>
+<td><span class="rate">62/78 = 79% [69%, 87%]</span></td><td><span class="rate">62/78 = 79% [69%, 87%]</span></td></tr>
+<tr><td>mem0</td><td>A 类：证据在窗口内</td><td class="num">110</td><td class="num">110</td>
+<td class="num">0</td><td class="num">0</td><td class="num">5</td>
+<td><span class="rate">66/110 = 60% [51%, 69%]</span></td><td><span class="rate">66/110 = 60% [51%, 69%]</span></td></tr>
+<tr><td>mem0</td><td>D 类：无证据（应拒答）</td><td class="num">78</td><td class="num">78</td>
+<td class="num">0</td><td class="num">0</td><td class="num">0</td>
+<td><span class="rate">65/78 = 83% [74%, 90%]</span></td><td><span class="rate">65/78 = 83% [74%, 90%]</span></td></tr>
+</table></div>
+<h3>A 类答案正确率（条形 = 点估计，横线 = 95% Wilson 区间；灰色为 null 对照组）</h3>
+<svg class="chart" viewBox="0 0 550 138" role="img" aria-label="answer accuracy with 95% intervals"><line class="grid" x1="70.0" y1="0" x2="70.0" y2="116"/><text class="tick" x="70.0" y="132" text-anchor="middle">0%</text><line class="grid" x1="175.0" y1="0" x2="175.0" y2="116"/><text class="tick" x="175.0" y="132" text-anchor="middle">25%</text><line class="grid" x1="280.0" y1="0" x2="280.0" y2="116"/><text class="tick" x="280.0" y="132" text-anchor="middle">50%</text><line class="grid" x1="385.0" y1="0" x2="385.0" y2="116"/><text class="tick" x="385.0" y="132" text-anchor="middle">75%</text><line class="grid" x1="490.0" y1="0" x2="490.0" y2="116"/><text class="tick" x="490.0" y="132" text-anchor="middle">100%</text><text class="label" x="62" y="21.4" text-anchor="end">null</text><rect class="bar control" x="70" y="6" width="114.5" height="22" rx="3"/><line class="whisker" x1="153.3" y1="17.0" x2="222.3" y2="17.0"/><line class="whisker" x1="153.3" y1="11.0" x2="153.3" y2="23.0"/><line class="whisker" x1="222.3" y1="11.0" x2="222.3" y2="23.0"/><text class="value" x="228.3" y="21.4">27%</text><text class="label" x="62" y="57.4" text-anchor="end">bm25</text><rect class="bar " x="70" y="42" width="225.3" height="22" rx="3"/><line class="whisker" x1="256.3" y1="53.0" x2="333.2" y2="53.0"/><line class="whisker" x1="256.3" y1="47.0" x2="256.3" y2="59.0"/><line class="whisker" x1="333.2" y1="47.0" x2="333.2" y2="59.0"/><text class="value" x="339.2" y="57.4">54%</text><text class="label" x="62" y="93.4" text-anchor="end">mem0</text><rect class="bar " x="70" y="78" width="252.0" height="22" rx="3"/><line class="whisker" x1="282.8" y1="89.0" x2="358.4" y2="89.0"/><line class="whisker" x1="282.8" y1="83.0" x2="282.8" y2="95.0"/><line class="whisker" x1="358.4" y1="83.0" x2="358.4" y2="95.0"/><text class="value" x="364.4" y="93.4">60%</text></svg>
+
+<h2>与 null 对照组的配对比较</h2>
+<p class="note">同一批题按题号配对；只看结论不一致的配对（McNemar 精确检验）。一侧环境故障的题不参与配对；未交付算作答错。</p>
+<div class="table-wrap"><table>
+<tr><th>类别</th><th>arm vs null</th><th>配对题数</th><th>都对</th><th>只有 arm 对</th><th>只有 null 对</th><th>都错</th><th>p 值</th><th>结论</th></tr>
+<tr><td>A 类：证据在窗口内</td><td>bm25 vs null</td><td class="num">110</td>
+<td class="num">24</td><td class="num">35</td><td class="num">6</td>
+<td class="num">45</td><td class="num">p &lt; 0.001</td><td class="verdict">bm25 高于 null（配对 McNemar 精确检验 p &lt; 0.001）</td></tr>
+<tr><td>D 类：无证据（应拒答）</td><td>bm25 vs null</td><td class="num">78</td>
+<td class="num">44</td><td class="num">18</td><td class="num">3</td>
+<td class="num">13</td><td class="num">p = 0.001</td><td class="verdict">bm25 高于 null（配对 McNemar 精确检验 p = 0.001）</td></tr>
+<tr><td>A 类：证据在窗口内</td><td>mem0 vs null</td><td class="num">110</td>
+<td class="num">28</td><td class="num">38</td><td class="num">2</td>
+<td class="num">42</td><td class="num">p &lt; 0.001</td><td class="verdict">mem0 高于 null（配对 McNemar 精确检验 p &lt; 0.001）</td></tr>
+<tr><td>D 类：无证据（应拒答）</td><td>mem0 vs null</td><td class="num">78</td>
+<td class="num">43</td><td class="num">22</td><td class="num">4</td>
+<td class="num">9</td><td class="num">p &lt; 0.001</td><td class="verdict">mem0 高于 null（配对 McNemar 精确检验 p &lt; 0.001）</td></tr>
+</table></div>
+
+<h2>按题型拆分 </h2>
+<p class="note">不同题型不能混在一起比较：选择题有随机猜对的下限，开放题没有。小格子只用于定位问题，不做横向比较（METHODOLOGY 1.7、1.8）。</p>
+<div class="table-wrap"><table>
+<tr><th>题型</th><th>null：答案正确率</th><th>bm25：答案正确率</th><th>mem0：答案正确率</th></tr>
+<tr><td>F_HL <span class="note">no-evidence (hallucination)</span></td>
+<td><span class="rate">47/78 = 60% [49%, 70%]</span></td><td><span class="rate">62/78 = 79% [69%, 87%]</span></td><td><span class="rate">65/78 = 83% [74%, 90%]</span></td></tr>
+<tr><td>F_MH <span class="note">multi-hop</span></td>
+<td><span class="rate small">0/4 = 0% [0%, 49%]</span></td><td><span class="rate small">0/4 = 0% [0%, 49%]</span></td><td><span class="rate small">0/4 = 0% [0%, 49%]</span></td></tr>
+<tr><td>F_SH <span class="note">single-hop</span></td>
+<td><span class="rate small">0/19 = 0% [0%, 17%]</span></td><td><span class="rate small">15/19 = 79% [57%, 91%]</span></td><td><span class="rate small">14/19 = 74% [51%, 88%]</span></td></tr>
+<tr><td>F_TP <span class="note">temporal</span></td>
+<td><span class="rate small">0/10 = 0% [0%, 28%]</span></td><td><span class="rate small">0/10 = 0% [0%, 28%]</span></td><td><span class="rate small">1/10 = 10% [2%, 40%]</span></td></tr>
+<tr><td>MA_C <span class="note">constraint</span></td>
+<td><span class="rate small">3/17 = 18% [6%, 41%]</span></td><td><span class="rate small">7/17 = 41% [22%, 64%]</span></td><td><span class="rate small">10/17 = 59% [36%, 78%]</span></td></tr>
+<tr><td>MA_P <span class="note">proactivity</span></td>
+<td><span class="rate small">14/17 = 82% [59%, 94%]</span></td><td><span class="rate small">13/17 = 76% [53%, 90%]</span></td><td><span class="rate small">15/17 = 88% [66%, 97%]</span></td></tr>
+<tr><td>MA_U <span class="note">updating</span></td>
+<td><span class="rate small">2/9 = 22% [6%, 55%]</span></td><td><span class="rate small">4/9 = 44% [19%, 73%]</span></td><td><span class="rate small">5/9 = 56% [27%, 81%]</span></td></tr>
+<tr><td>P_Skill <span class="note">skill</span></td>
+<td><span class="rate small">5/14 = 36% [16%, 61%]</span></td><td><span class="rate small">8/14 = 57% [33%, 79%]</span></td><td><span class="rate small">10/14 = 71% [45%, 88%]</span></td></tr>
+<tr><td>P_Style <span class="note">style</span></td>
+<td><span class="rate small">3/10 = 30% [11%, 60%]</span></td><td><span class="rate small">6/10 = 60% [31%, 83%]</span></td><td><span class="rate small">5/10 = 50% [24%, 76%]</span></td></tr>
+<tr><td>P_Title <span class="note">title</span></td>
+<td><span class="rate small">3/10 = 30% [11%, 60%]</span></td><td><span class="rate small">6/10 = 60% [31%, 83%]</span></td><td><span class="rate small">6/10 = 60% [31%, 83%]</span></td></tr>
+</table></div>
+
+<h2>按证据范围拆分 </h2>
+<div class="table-wrap"><table>
+<tr><th>证据范围</th><th>null：答案正确率</th><th>bm25：答案正确率</th><th>mem0：答案正确率</th></tr>
+<tr><td>single-group</td><td><span class="rate">22/84 = 26% [18%, 36%]</span></td><td><span class="rate">48/84 = 57% [46%, 67%]</span></td><td><span class="rate">52/84 = 62% [51%, 72%]</span></td></tr>
+<tr><td>cross-group</td><td><span class="rate small">8/26 = 31% [17%, 50%]</span></td><td><span class="rate small">11/26 = 42% [26%, 61%]</span></td><td><span class="rate small">14/26 = 54% [35%, 71%]</span></td></tr>
+<tr><td>no-evidence</td><td><span class="rate">47/78 = 60% [49%, 70%]</span></td><td><span class="rate">62/78 = 79% [69%, 87%]</span></td><td><span class="rate">65/78 = 83% [74%, 90%]</span></td></tr>
+</table></div>
+
+<h2>检索 × 判分（2×2）</h2>
+<p class="note">只统计有证据位置、且已交付的题。四个格子对应不同的改进方向（METHODOLOGY 1.8）。“命中但答错”是阅读或推理问题，“未命中但答对”不能算作记忆的功劳。</p>
+<div class="cards">
+<div class="card">
+<h3>null · 命中判据：检索到证据消息（严格）</h3>
+<table class="grid2">
+<tr><th></th><th>答对</th><th>答错</th></tr>
+<tr><th>命中</th><td>0<span class="cellnote">记忆带来的正确</span></td><td>0<span class="cellnote">阅读 / 推理问题</span></td></tr>
+<tr><th>未命中</th><td>30<span class="cellnote">猜对或靠常识</span></td><td>80<span class="cellnote">检索问题</span></td></tr>
+</table>
+<p class="note">共 110 题；未交付而不计入 0 题。</p>
+</div>
+<div class="card">
+<h3>null · 命中判据：检索到证据当天的消息（宽松）</h3>
+<table class="grid2">
+<tr><th></th><th>答对</th><th>答错</th></tr>
+<tr><th>命中</th><td>0<span class="cellnote">记忆带来的正确</span></td><td>0<span class="cellnote">阅读 / 推理问题</span></td></tr>
+<tr><th>未命中</th><td>30<span class="cellnote">猜对或靠常识</span></td><td>80<span class="cellnote">检索问题</span></td></tr>
+</table>
+<p class="note">共 110 题；未交付而不计入 0 题。</p>
+</div>
+<div class="card">
+<h3>bm25 · 命中判据：检索到证据消息（严格）</h3>
+<table class="grid2">
+<tr><th></th><th>答对</th><th>答错</th></tr>
+<tr><th>命中</th><td>43<span class="cellnote">记忆带来的正确</span></td><td>31<span class="cellnote">阅读 / 推理问题</span></td></tr>
+<tr><th>未命中</th><td>16<span class="cellnote">猜对或靠常识</span></td><td>20<span class="cellnote">检索问题</span></td></tr>
+</table>
+<p class="note">共 110 题；未交付而不计入 0 题。</p>
+</div>
+<div class="card">
+<h3>bm25 · 命中判据：检索到证据当天的消息（宽松）</h3>
+<table class="grid2">
+<tr><th></th><th>答对</th><th>答错</th></tr>
+<tr><th>命中</th><td>48<span class="cellnote">记忆带来的正确</span></td><td>34<span class="cellnote">阅读 / 推理问题</span></td></tr>
+<tr><th>未命中</th><td>11<span class="cellnote">猜对或靠常识</span></td><td>17<span class="cellnote">检索问题</span></td></tr>
+</table>
+<p class="note">共 110 题；未交付而不计入 0 题。</p>
+</div>
+<div class="card">
+<h3>mem0 · 命中判据：检索到证据消息（严格）</h3>
+<table class="grid2">
+<tr><th></th><th>答对</th><th>答错</th></tr>
+<tr><th>命中</th><td>0<span class="cellnote">记忆带来的正确</span></td><td>0<span class="cellnote">阅读 / 推理问题</span></td></tr>
+<tr><th>未命中</th><td>0<span class="cellnote">猜对或靠常识</span></td><td>0<span class="cellnote">检索问题</span></td></tr>
+</table>
+<p class="note">共 0 题；未交付而不计入 0 题；<strong>110 题不适用</strong>（该 arm 返回的是抽取后的记忆而非原始消息，只能按日期判定命中）。</p>
+</div>
+<div class="card">
+<h3>mem0 · 命中判据：检索到证据当天的消息（宽松）</h3>
+<table class="grid2">
+<tr><th></th><th>答对</th><th>答错</th></tr>
+<tr><th>命中</th><td>51<span class="cellnote">记忆带来的正确</span></td><td>29<span class="cellnote">阅读 / 推理问题</span></td></tr>
+<tr><th>未命中</th><td>15<span class="cellnote">猜对或靠常识</span></td><td>15<span class="cellnote">检索问题</span></td></tr>
+</table>
+<p class="note">共 110 题；未交付而不计入 0 题。</p>
+</div>
+</div>
+
+<h2>查询形态敏感性实验</h2>
+<p class="note">同一批有证据位置的题，用三种查询各检索一次（METHODOLOGY 1.9）：① 只用题干；② 题干 + 全部选项；③ 短查询。短查询是<strong>自动截取的题干实词</strong>，不是人工改写（D-010）。只检索、不写入、不调用 LLM。</p>
+<div class="table-wrap"><table>
+<tr><th>arm</th><th>查询形态</th><th>证据命中率</th><th>空结果率</th><th>命中判据</th></tr>
+<tr><td>bm25</td><td>① 只用题干</td>
+<td><span class="rate">74/110 = 67% [58%, 75%]</span></td><td><span class="rate">0/110 = 0% [0%, 3%]</span></td><td>证据消息</td></tr>
+<tr><td>bm25</td><td>② 题干 + 选项</td>
+<td><span class="rate">99/110 = 90% [83%, 94%]</span></td><td><span class="rate">0/110 = 0% [0%, 3%]</span></td><td>证据消息</td></tr>
+<tr><td>bm25</td><td>③ 短查询（自动）</td>
+<td><span class="rate">32/110 = 29% [21%, 38%]</span></td><td><span class="rate">0/110 = 0% [0%, 3%]</span></td><td>证据消息</td></tr>
+<tr><td>mem0</td><td>① 只用题干</td>
+<td><span class="rate">80/110 = 73% [64%, 80%]</span></td><td><span class="rate">0/110 = 0% [0%, 3%]</span></td><td>证据当天</td></tr>
+<tr><td>mem0</td><td>② 题干 + 选项</td>
+<td><span class="rate">97/110 = 88% [81%, 93%]</span></td><td><span class="rate">0/110 = 0% [0%, 3%]</span></td><td>证据当天</td></tr>
+<tr><td>mem0</td><td>③ 短查询（自动）</td>
+<td><span class="rate">54/110 = 49% [40%, 58%]</span></td><td><span class="rate">0/110 = 0% [0%, 3%]</span></td><td>证据当天</td></tr>
+</table></div>
+
+<h2>评分员口径对比：v1 与 v2</h2>
+<p class="note">同一份答案分别用 v1（宽松）和 v2（加拒答规则、收紧宽松边界）判分，提示词是唯一变量（METHODOLOGY 1.5）。
+这是<strong>两个评分员口径之间</strong>的一致性，不是与人工判断的一致性；本项目没有做人工校准。</p>
+<h3>null：llm-v1 vs llm-v2</h3>
+<p>一致率 <span class="rate">58/111 = 52% [43%, 61%]</span>；Cohen's κ = 0.15（bootstrap 95% 区间 [0.07, 0.25]）；判定翻转 53 题。</p>
+<div class="table-wrap"><table>
+<tr><th>llm-v1 \ llm-v2</th><th>CORRECT</th><th>WRONG</th></tr>
+<tr><th>CORRECT</th><td class="num">47</td><td class="num">0</td></tr>
+<tr><th>WRONG</th><td class="num">53</td><td class="num">11</td></tr>
+</table></div>
+<div class="table-wrap"><table>
+<tr><th>题型</th><th>两口径一致率</th></tr>
+<tr><td>F_HL</td><td><span class="rate">47/78 = 60% [49%, 70%]</span></td></tr><tr><td>F_MH</td><td><span class="rate small">1/4 = 25% [5%, 70%]</span></td></tr><tr><td>F_SH</td><td><span class="rate small">9/19 = 47% [27%, 68%]</span></td></tr><tr><td>F_TP</td><td><span class="rate small">1/10 = 10% [2%, 40%]</span></td></tr></table></div>
+<p class="note"><strong>规则一致性自动检查</strong>（按评分员提示词里写下的规则机械检查，不是人工标注，只用于定位可疑判定）：</p>
+<div class="table-wrap"><table>
+<tr><th>口径</th><th>检查的判定数</th><th>可回答题：答案是拒答且不含标准答案，却判 CORRECT（违反规则 1）</th><th>无证据题：纯拒答却判 WRONG（违反 v2 规则 4；v1 无此规则）</th></tr>
+<tr><td>llm-v1</td><td class="num">111</td>
+<td class="num">0</td>
+<td class="num">31</td></tr>
+<tr><td>llm-v2</td><td class="num">111</td>
+<td class="num">22 <span class="note">F_MH_Top004_001, F_MH_Top004_023, F_MH_Top004_032, F_SH_Top004_004, F_SH_Top004_007, F_SH_Top004_012, F_SH_Top004_013, F_SH_Top004_017, F_SH_Top004_021, F_SH_Top004_024, F_SH_Top004_030, F_SH_Top004_033, F_SH_Top004_047, F_TP_Top004_001, F_TP_Top004_009, F_TP_Top004_011, F_TP_Top004_014, F_TP_Top004_016, F_TP_Top004_018, F_TP_Top004_019, F_TP_Top004_021, F_TP_Top004_024</span></td>
+<td class="num">0</td></tr>
+</table></div>
+<details><summary>翻转的题（53）</summary><div class="detail-body"><ul>
+<li><code>F_HL_Top004_002</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_003</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_005</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_007</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_008</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_009</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_010</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_013</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_014</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_019</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_021</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_024</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_029</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_031</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_032</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_040</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_042</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_045</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_048</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_049</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_050</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_051</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_053</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_054</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_057</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_058</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_062</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_070</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_075</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_076</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_077</code> WRONG → CORRECT</li>
+<li><code>F_MH_Top004_001</code> WRONG → CORRECT</li>
+<li><code>F_MH_Top004_023</code> WRONG → CORRECT</li>
+<li><code>F_MH_Top004_032</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_004</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_007</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_012</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_013</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_017</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_021</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_024</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_030</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_033</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_047</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_001</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_009</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_011</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_014</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_016</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_018</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_019</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_021</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_024</code> WRONG → CORRECT</li>
+</ul></div></details>
+<h3>bm25：llm-v1 vs llm-v2</h3>
+<p>一致率 <span class="rate">87/111 = 78% [70%, 85%]</span>；Cohen's κ = 0.37（bootstrap 95% 区间 [0.20, 0.54]）；判定翻转 24 题。</p>
+<div class="table-wrap"><table>
+<tr><th>llm-v1 \ llm-v2</th><th>CORRECT</th><th>WRONG</th></tr>
+<tr><th>CORRECT</th><td class="num">77</td><td class="num">0</td></tr>
+<tr><th>WRONG</th><td class="num">24</td><td class="num">10</td></tr>
+</table></div>
+<div class="table-wrap"><table>
+<tr><th>题型</th><th>两口径一致率</th></tr>
+<tr><td>F_HL</td><td><span class="rate">62/78 = 79% [69%, 87%]</span></td></tr><tr><td>F_MH</td><td><span class="rate small">3/4 = 75% [30%, 95%]</span></td></tr><tr><td>F_SH</td><td><span class="rate small">16/19 = 84% [62%, 94%]</span></td></tr><tr><td>F_TP</td><td><span class="rate small">6/10 = 60% [31%, 83%]</span></td></tr></table></div>
+<p class="note"><strong>规则一致性自动检查</strong>（按评分员提示词里写下的规则机械检查，不是人工标注，只用于定位可疑判定）：</p>
+<div class="table-wrap"><table>
+<tr><th>口径</th><th>检查的判定数</th><th>可回答题：答案是拒答且不含标准答案，却判 CORRECT（违反规则 1）</th><th>无证据题：纯拒答却判 WRONG（违反 v2 规则 4；v1 无此规则）</th></tr>
+<tr><td>llm-v1</td><td class="num">111</td>
+<td class="num">0</td>
+<td class="num">16</td></tr>
+<tr><td>llm-v2</td><td class="num">111</td>
+<td class="num">8 <span class="note">F_MH_Top004_032, F_SH_Top004_017, F_SH_Top004_024, F_SH_Top004_030, F_TP_Top004_001, F_TP_Top004_014, F_TP_Top004_021, F_TP_Top004_024</span></td>
+<td class="num">0</td></tr>
+</table></div>
+<details><summary>翻转的题（24）</summary><div class="detail-body"><ul>
+<li><code>F_HL_Top004_002</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_003</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_009</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_012</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_013</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_014</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_024</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_029</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_031</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_032</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_042</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_049</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_054</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_055</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_072</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_077</code> WRONG → CORRECT</li>
+<li><code>F_MH_Top004_032</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_017</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_024</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_030</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_001</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_014</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_021</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_024</code> WRONG → CORRECT</li>
+</ul></div></details>
+<h3>mem0：llm-v1 vs llm-v2</h3>
+<p>一致率 <span class="rate">88/111 = 79% [71%, 86%]</span>；Cohen's κ = 0.35（bootstrap 95% 区间 [0.16, 0.53]）；判定翻转 23 题。</p>
+<div class="table-wrap"><table>
+<tr><th>llm-v1 \ llm-v2</th><th>CORRECT</th><th>WRONG</th></tr>
+<tr><th>CORRECT</th><td class="num">79</td><td class="num">1</td></tr>
+<tr><th>WRONG</th><td class="num">22</td><td class="num">9</td></tr>
+</table></div>
+<div class="table-wrap"><table>
+<tr><th>题型</th><th>两口径一致率</th></tr>
+<tr><td>F_HL</td><td><span class="rate">66/78 = 85% [75%, 91%]</span></td></tr><tr><td>F_MH</td><td><span class="rate small">3/4 = 75% [30%, 95%]</span></td></tr><tr><td>F_SH</td><td><span class="rate small">15/19 = 79% [57%, 91%]</span></td></tr><tr><td>F_TP</td><td><span class="rate small">4/10 = 40% [17%, 69%]</span></td></tr></table></div>
+<p class="note"><strong>规则一致性自动检查</strong>（按评分员提示词里写下的规则机械检查，不是人工标注，只用于定位可疑判定）：</p>
+<div class="table-wrap"><table>
+<tr><th>口径</th><th>检查的判定数</th><th>可回答题：答案是拒答且不含标准答案，却判 CORRECT（违反规则 1）</th><th>无证据题：纯拒答却判 WRONG（违反 v2 规则 4；v1 无此规则）</th></tr>
+<tr><td>llm-v1</td><td class="num">111</td>
+<td class="num">0</td>
+<td class="num">12</td></tr>
+<tr><td>llm-v2</td><td class="num">111</td>
+<td class="num">9 <span class="note">F_MH_Top004_032, F_SH_Top004_021, F_SH_Top004_030, F_TP_Top004_001, F_TP_Top004_011, F_TP_Top004_014, F_TP_Top004_016, F_TP_Top004_021, F_TP_Top004_024</span></td>
+<td class="num">0</td></tr>
+</table></div>
+<details><summary>翻转的题（23）</summary><div class="detail-body"><ul>
+<li><code>F_HL_Top004_002</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_008</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_009</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_023</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_024</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_029</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_033</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_042</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_045</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_049</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_062</code> WRONG → CORRECT</li>
+<li><code>F_HL_Top004_072</code> WRONG → CORRECT</li>
+<li><code>F_MH_Top004_032</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_004</code> CORRECT → WRONG</li>
+<li><code>F_SH_Top004_021</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_024</code> WRONG → CORRECT</li>
+<li><code>F_SH_Top004_030</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_001</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_011</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_014</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_016</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_021</code> WRONG → CORRECT</li>
+<li><code>F_TP_Top004_024</code> WRONG → CORRECT</li>
+</ul></div></details>
+
+<h2>Agent 层指标 </h2>
+<p class="note">同一份语料上，用 2 种脚本化策略驱动同一个极简 Agent：<code>good</code> 是参照，其余每种模拟一种已知缺陷（METHODOLOGY 2.1）。
+任务：memory 13 题、web 4 题、chitchat 3 题。
+预算：最多 6 轮、4 次工具调用、同一工具连续 3 次、60.0 秒。
+所有检查（交付、收敛、路由、回退、轨迹、trace 完整性）与 <code>tests/agent</code> 用的是同一份判据代码。</p>
+
+<h3>交付、预算与正确率</h3>
+<div class="table-wrap"><table>
+<tr><th>策略</th><th>n</th><th>交付率</th><th>预算触发率</th><th>答案正确率</th><th>端到端成功率</th><th>环境故障</th><th>Agent 错误</th><th>未通过的检查（题数）</th></tr>
+<tr><td><code>live:deepseek-flash:agent-v2</code></td><td class="num">20</td><td><span class="rate small">14/20 = 70% [48%, 85%]</span></td><td><span class="rate small">6/20 = 30% [15%, 52%]</span></td>
+<td><span class="rate small">7/11 = 64% [35%, 85%]</span></td><td><span class="rate small">7/17 = 41% [22%, 64%]</span></td><td class="num">0</td><td class="num">0</td>
+<td>交付 6，收敛 6，路由 4</td></tr>
+<tr><td><code>live:deepseek-flash</code></td><td class="num">20</td><td><span class="rate small">9/20 = 45% [26%, 66%]</span></td><td><span class="rate small">11/20 = 55% [34%, 74%]</span></td>
+<td><span class="rate small">4/6 = 67% [30%, 90%]</span></td><td><span class="rate small">4/17 = 24% [10%, 47%]</span></td><td class="num">0</td><td class="num">0</td>
+<td>交付 11，收敛 11，路由 6</td></tr>
+</table></div>
+<p class="note">答案正确率与端到端成功率只统计有标准答案的题（记忆类与 web 类）；闲聊题只看交付与路由。</p>
+
+<h3>工具调用分布（总次数 / 平均每题）</h3>
+<div class="table-wrap"><table>
+<tr><th>策略</th><th>memory_search</th><th>web_search</th></tr>
+<tr><td><code>live:deepseek-flash:agent-v2</code></td><td class="num">31 / 1.55</td><td class="num">2 / 0.10</td></tr>
+<tr><td><code>live:deepseek-flash</code></td><td class="num">37 / 1.85</td><td class="num">3 / 0.15</td></tr>
+</table></div>
+
+<h3>路由混淆矩阵（行 = 按 Agent 自己声明的规则得出的期望路由，列 = 第一次路由决定）</h3>
+<div class="cards">
+<div class="card">
+<h3><code>live:deepseek-flash:agent-v2</code></h3>
+<table class="grid2">
+<tr><th>期望 \ 实际</th><th>memory</th><th>web</th><th>chitchat</th></tr>
+<tr><th>memory</th><td>11</td><td>0</td><td>2</td></tr>
+<tr><th>web</th><td>0</td><td>4</td><td>0</td></tr>
+<tr><th>chitchat</th><td>0</td><td>0</td><td>3</td></tr>
+</table>
+<p class="note">memory：精确率 100%，召回率 85%；web：精确率 100%，召回率 100%；chitchat：精确率 60%，召回率 100%</p>
+</div>
+<div class="card">
+<h3><code>live:deepseek-flash</code></h3>
+<table class="grid2">
+<tr><th>期望 \ 实际</th><th>memory</th><th>web</th><th>chitchat</th></tr>
+<tr><th>memory</th><td>8</td><td>0</td><td>0</td></tr>
+<tr><th>web</th><td>0</td><td>4</td><td>0</td></tr>
+<tr><th>chitchat</th><td>0</td><td>0</td><td>3</td></tr>
+</table>
+<p class="note">memory：精确率 100%，召回率 62%；web：精确率 100%，召回率 100%；chitchat：精确率 100%，召回率 100%</p>
+</div>
+</div>
+
+<h3>耗时拆解（平均每题）</h3>
+<div class="table-wrap"><table>
+<tr><th>策略</th><th>总耗时 ms</th><th>LLM ms（占比）</th><th>工具 ms（占比）</th><th>框架 ms（占比）</th><th>平均 TTFT ms</th></tr>
+<tr><td><code>live:deepseek-flash:agent-v2</code></td><td class="num">2762.7</td>
+<td class="num">2760.7（100%）</td>
+<td class="num">1.8（0%）</td>
+<td class="num">0.2（0%）</td>
+<td class="num">728.5</td></tr>
+<tr><td><code>live:deepseek-flash</code></td><td class="num">3531.9</td>
+<td class="num">3529.9（100%）</td>
+<td class="num">1.8（0%）</td>
+<td class="num">0.2（0%）</td>
+<td class="num">700.4</td></tr>
+</table></div>
+<p class="note">框架 = 总耗时 − LLM − 工具：轮次调度、上下文组装、序列化。只拆成 LLM 和工具两段会把这部分藏起来（METHODOLOGY 2.3 第 9 项）。</p>
+
+<h2>逐题明细</h2>
+<p class="note">公开版只列出每道题在各 arm 上的结局与判分；题目、标准答案、模型答案和检索到的对话原文不随公开报告分发（数据集许可与引用约定见 docs/decisions.md D-002）。完整明细在本地结果文件中。</p>
+<details>
+<summary><code>F_HL_Top004_001</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_002</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_003</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_004</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_005</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_006</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_007</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_008</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_009</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_010</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_011</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_012</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_013</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_014</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_015</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_016</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_017</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_018</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_019</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_020</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_021</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_022</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_023</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_024</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_025</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_026</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_027</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_028</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_029</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_030</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_031</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_032</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_033</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_034</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_035</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_036</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_037</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_038</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_039</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_040</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_041</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_042</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_043</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_044</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_045</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_046</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_047</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_048</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_049</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_050</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_051</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_052</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_053</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_054</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_055</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_056</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_057</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_058</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_059</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_060</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_061</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_062</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_063</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_064</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_065</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_066</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_067</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_068</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_069</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_070</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_071</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_072</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_073</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_074</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_075</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_076</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_077</code><span class="note">D 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_HL_Top004_078</code><span class="note">D 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered。bm25：结局 delivered。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_MH_Top004_001</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_MH_Top004_008</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_MH_Top004_023</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_MH_Top004_032</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_002</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_004</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_007</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_011</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_012</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_013</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_014</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_017</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_018</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_021</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_024</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_027</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_028</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_030</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_033</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_045</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_046</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_047</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索未命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_SH_Top004_049</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_TP_Top004_001</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索未命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_TP_Top004_009</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_TP_Top004_011</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_TP_Top004_014</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_TP_Top004_016</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_TP_Top004_018</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_TP_Top004_019</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_TP_Top004_021</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_TP_Top004_024</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>F_TP_Top004_056</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，检索未命中证据消息。bm25：结局 delivered，检索命中证据消息。mem0：结局 delivered。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_001</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索未命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_002</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 A，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索未命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_003</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 A，检索命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_005</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索未命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_006</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_007</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_008</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span><span class="flag">歧义提取</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索未命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_009</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索未命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_010</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span><span class="flag">歧义提取</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索未命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_011</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索未命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_012</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span><span class="flag">歧义提取</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索未命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_013</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索未命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_014</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span><span class="flag">歧义提取</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索未命中证据消息。mem0：结局 delivered，提取到 A。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_015</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_016</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索未命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_017</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索未命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>MA_C_Top004_018</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索未命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_001</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_002</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_003</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_004</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索未命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_005</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 A，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索未命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_006</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_007</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_009</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 A，检索未命中证据消息。bm25：结局 delivered，提取到 A，检索命中证据消息。mem0：结局 delivered，提取到 A。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_010</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索未命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_011</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 A，检索未命中证据消息。mem0：结局 delivered，提取到 A。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_012</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索未命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_013</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_014</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_015</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_017</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_018</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>MA_P_Top004_019</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 A，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 A。</p></div>
+</details>
+<details>
+<summary><code>MA_U_Top004_007</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>MA_U_Top004_008</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_U_Top004_009</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_U_Top004_035</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_U_Top004_036</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_U_Top004_041</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>MA_U_Top004_043</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>MA_U_Top004_050</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>MA_U_Top004_054</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_006</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索未命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_007</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索未命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_014</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 A，检索未命中证据消息。bm25：结局 delivered，提取到 A，检索命中证据消息。mem0：结局 delivered，提取到 A。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_018</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索未命中证据消息。mem0：结局 delivered，提取到 A。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_022</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索未命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_027</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_029</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索未命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_030</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_033</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_034</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span><span class="flag">歧义提取</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_035</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_037</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_039</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>P_Skill_Top004_041</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索未命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>P_Style_Top004_001</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>P_Style_Top004_002</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>P_Style_Top004_008</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 A。</p></div>
+</details>
+<details>
+<summary><code>P_Style_Top004_017</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>P_Style_Top004_018</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>P_Style_Top004_019</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span><span class="flag">歧义提取</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 A，检索未命中证据消息。bm25：结局 delivered，提取到 无，检索未命中证据消息。mem0：结局 delivered，提取到 A。</p></div>
+</details>
+<details>
+<summary><code>P_Style_Top004_020</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>P_Style_Top004_021</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>P_Style_Top004_022</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>P_Style_Top004_026</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 B，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索未命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>P_Title_Top004_009</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 A，检索未命中证据消息。mem0：结局 delivered，提取到 A。</p></div>
+</details>
+<details>
+<summary><code>P_Title_Top004_018</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>P_Title_Top004_027</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索未命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>P_Title_Top004_029</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>P_Title_Top004_031</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 D，检索未命中证据消息。bm25：结局 delivered，提取到 D，检索未命中证据消息。mem0：结局 delivered，提取到 D。</p></div>
+</details>
+<details>
+<summary><code>P_Title_Top004_033</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 A，检索未命中证据消息。mem0：结局 delivered，提取到 A。</p></div>
+</details>
+<details>
+<summary><code>P_Title_Top004_038</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 无，检索未命中证据消息。bm25：结局 delivered，提取到 B，检索未命中证据消息。mem0：结局 delivered，提取到 B。</p></div>
+</details>
+<details>
+<summary><code>P_Title_Top004_040</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索未命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+<details>
+<summary><code>P_Title_Top004_045</code><span class="note">A 类</span>
+<span>null:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>bm25:
+<span class="badge CORRECT">CORRECT</span></span>
+<span>mem0:
+<span class="badge CORRECT">CORRECT</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 C，检索未命中证据消息。bm25：结局 delivered，提取到 C，检索未命中证据消息。mem0：结局 delivered，提取到 C。</p></div>
+</details>
+<details>
+<summary><code>P_Title_Top004_049</code><span class="note">A 类</span>
+<span>null:
+<span class="badge WRONG">WRONG</span></span>
+<span>bm25:
+<span class="badge WRONG">WRONG</span></span>
+<span>mem0:
+<span class="badge WRONG">WRONG</span><span class="flag">歧义提取</span></span>
+</summary>
+<div class="detail-body"><p class="note">null：结局 delivered，提取到 A，检索未命中证据消息。bm25：结局 delivered，提取到 A，检索未命中证据消息。mem0：结局 delivered，提取到 无。</p></div>
+</details>
+
+<h2>运行元数据</h2>
+<p class="note">报告里的每个数字都由下列结果文件计算得到；records_sha256 可用来核对文件没有被改动（METHODOLOGY P4）。</p>
+<h3>null</h3>
+<div class="table-wrap"><table>
+<tr><th>字段</th><th>值</th></tr>
+<tr><td>run_id</td><td><code>live-v1-null</code></td></tr>
+<tr><td>corpus_id</td><td><code>emb-004@a1607d39c0:2025-01-09..2025-05-14</code></td></tr>
+<tr><td>arm</td><td><code>null</code></td></tr>
+<tr><td>arm_config_hash</td><td><code>52239ecbf339</code></td></tr>
+<tr><td>answer_model</td><td><code>deepseek-flash+thinking=off</code></td></tr>
+<tr><td>answer_prompt_version</td><td><code>answer-v1</code></td></tr>
+<tr><td>judge_model</td><td><code>deepseek-v4-pro+thinking=off</code></td></tr>
+<tr><td>judge_prompt_version</td><td><code>llm-v1</code></td></tr>
+<tr><td>scored_classes</td><td><code>A,D</code></td></tr>
+<tr><td>question_set</td><td><code>15cddc617bd5</code></td></tr>
+<tr><td>created_at</td><td><code>2026-10-19T15:42:33+00:00</code></td></tr>
+<tr><td>git_commit</td><td><code>ebe48f4bd164</code></td></tr>
+<tr><td>run_dir</td><td><code>null</code></td></tr>
+<tr><td>ingest.json</td><td><code>records_sha256 38f001869eee3279…</code></td></tr>
+<tr><td>search.json</td><td><code>records_sha256 c9e0f6eb5e3f8715…</code></td></tr>
+<tr><td>answer.json</td><td><code>records_sha256 7f1f0437bd99fcff…</code></td></tr>
+<tr><td>judge.json</td><td><code>records_sha256 e215160c013cb488…</code></td></tr>
+</table></div>
+<h3>bm25</h3>
+<div class="table-wrap"><table>
+<tr><th>字段</th><th>值</th></tr>
+<tr><td>run_id</td><td><code>live-v1-bm25</code></td></tr>
+<tr><td>corpus_id</td><td><code>emb-004@a1607d39c0:2025-01-09..2025-05-14</code></td></tr>
+<tr><td>arm</td><td><code>bm25</code></td></tr>
+<tr><td>arm_config_hash</td><td><code>c14294558d90</code></td></tr>
+<tr><td>answer_model</td><td><code>deepseek-flash+thinking=off</code></td></tr>
+<tr><td>answer_prompt_version</td><td><code>answer-v1</code></td></tr>
+<tr><td>judge_model</td><td><code>deepseek-v4-pro+thinking=off</code></td></tr>
+<tr><td>judge_prompt_version</td><td><code>llm-v1</code></td></tr>
+<tr><td>scored_classes</td><td><code>A,D</code></td></tr>
+<tr><td>question_set</td><td><code>15cddc617bd5</code></td></tr>
+<tr><td>created_at</td><td><code>2026-10-19T15:47:12+00:00</code></td></tr>
+<tr><td>git_commit</td><td><code>ebe48f4bd164+dirty</code></td></tr>
+<tr><td>run_dir</td><td><code>bm25</code></td></tr>
+<tr><td>ingest.json</td><td><code>records_sha256 a159950439f600aa…</code></td></tr>
+<tr><td>search.json</td><td><code>records_sha256 af382951040dbe33…</code></td></tr>
+<tr><td>answer.json</td><td><code>records_sha256 06ffcd62d2267246…</code></td></tr>
+<tr><td>judge.json</td><td><code>records_sha256 498353ed587c0ae0…</code></td></tr>
+</table></div>
+<h3>mem0</h3>
+<div class="table-wrap"><table>
+<tr><th>字段</th><th>值</th></tr>
+<tr><td>run_id</td><td><code>live-v1-mem0</code></td></tr>
+<tr><td>corpus_id</td><td><code>emb-004@a1607d39c0:2025-01-09..2025-05-14</code></td></tr>
+<tr><td>arm</td><td><code>mem0</code></td></tr>
+<tr><td>arm_config_hash</td><td><code>4c813e70e97d</code></td></tr>
+<tr><td>answer_model</td><td><code>deepseek-flash+thinking=off</code></td></tr>
+<tr><td>answer_prompt_version</td><td><code>answer-v1</code></td></tr>
+<tr><td>judge_model</td><td><code>deepseek-v4-pro+thinking=off</code></td></tr>
+<tr><td>judge_prompt_version</td><td><code>llm-v1</code></td></tr>
+<tr><td>scored_classes</td><td><code>A,D</code></td></tr>
+<tr><td>question_set</td><td><code>15cddc617bd5</code></td></tr>
+<tr><td>created_at</td><td><code>2026-10-19T16:11:40+00:00</code></td></tr>
+<tr><td>git_commit</td><td><code>8c06114bb634</code></td></tr>
+<tr><td>run_dir</td><td><code>mem0</code></td></tr>
+<tr><td>ingest.json</td><td><code>records_sha256 2ed0f9f6999fa91f…</code></td></tr>
+<tr><td>search.json</td><td><code>records_sha256 83baecd808807d88…</code></td></tr>
+<tr><td>answer.json</td><td><code>records_sha256 187a8cdab0e08ae6…</code></td></tr>
+<tr><td>judge.json</td><td><code>records_sha256 7df2ff92f4b3a8fb…</code></td></tr>
+</table></div>
+</main>
+</body>
+</html>

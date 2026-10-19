@@ -1,0 +1,1526 @@
+{
+  "schema_version": 1,
+  "name": "live-v1-bm25",
+  "frozen_at": "2026-10-19T16:24:22+00:00",
+  "source_run_dir": "runs/live-v1/bm25",
+  "meta": {
+    "run_id": "live-v1-bm25",
+    "corpus_id": "emb-004@a1607d39c0:2025-01-09..2025-05-14",
+    "arm": "bm25",
+    "arm_config_hash": "c14294558d90",
+    "answer_model": "deepseek-flash+thinking=off",
+    "answer_prompt_version": "answer-v1",
+    "judge_model": "deepseek-v4-pro+thinking=off",
+    "judge_prompt_version": "llm-v1",
+    "scored_classes": "A,D",
+    "question_set": "15cddc617bd5",
+    "created_at": "2026-10-19T15:47:12+00:00",
+    "git_commit": "ebe48f4bd164+dirty"
+  },
+  "entries": [
+    {
+      "qid": "F_HL_Top004_001",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_002",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_003",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_004",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_005",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_006",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_007",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_008",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_009",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_010",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_011",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_012",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_013",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_014",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_015",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_016",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_017",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_018",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_019",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_020",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_021",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_022",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_023",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_024",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_025",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_026",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_027",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_028",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_029",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_030",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_031",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_032",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_033",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_034",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_035",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_036",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_037",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_038",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_039",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_040",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_041",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_042",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_043",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_044",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_045",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_046",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_047",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_048",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_049",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_050",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_051",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_052",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_053",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_054",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_055",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_056",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_057",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_058",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_059",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_060",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_061",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_062",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_063",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_064",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_065",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_066",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_067",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_068",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_069",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_070",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_071",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_072",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_073",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_074",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_075",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_076",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_077",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_HL_Top004_078",
+      "qtype": "F_HL",
+      "window_class": "D",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": null
+    },
+    {
+      "qid": "F_MH_Top004_001",
+      "qtype": "F_MH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_MH_Top004_008",
+      "qtype": "F_MH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_MH_Top004_023",
+      "qtype": "F_MH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_MH_Top004_032",
+      "qtype": "F_MH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_002",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_004",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_007",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_011",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_012",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_013",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_014",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_017",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_018",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_021",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_024",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_027",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_028",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_030",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_033",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_045",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_046",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_SH_Top004_047",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "F_SH_Top004_049",
+      "qtype": "F_SH",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_TP_Top004_001",
+      "qtype": "F_TP",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "F_TP_Top004_009",
+      "qtype": "F_TP",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_TP_Top004_011",
+      "qtype": "F_TP",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_TP_Top004_014",
+      "qtype": "F_TP",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_TP_Top004_016",
+      "qtype": "F_TP",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_TP_Top004_018",
+      "qtype": "F_TP",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_TP_Top004_019",
+      "qtype": "F_TP",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_TP_Top004_021",
+      "qtype": "F_TP",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_TP_Top004_024",
+      "qtype": "F_TP",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "F_TP_Top004_056",
+      "qtype": "F_TP",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_C_Top004_001",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_002",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_003",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_C_Top004_005",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_006",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_C_Top004_007",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_C_Top004_008",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_009",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_010",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_011",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_012",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_013",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_014",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_015",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_C_Top004_016",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_017",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_C_Top004_018",
+      "qtype": "MA_C",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_P_Top004_001",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_002",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_003",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_004",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_P_Top004_005",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_P_Top004_006",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_007",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_009",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_010",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_P_Top004_011",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_P_Top004_012",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "MA_P_Top004_013",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_014",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_015",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_017",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_018",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_P_Top004_019",
+      "qtype": "MA_P",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_U_Top004_007",
+      "qtype": "MA_U",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_U_Top004_008",
+      "qtype": "MA_U",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_U_Top004_009",
+      "qtype": "MA_U",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_U_Top004_035",
+      "qtype": "MA_U",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_U_Top004_036",
+      "qtype": "MA_U",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_U_Top004_041",
+      "qtype": "MA_U",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_U_Top004_043",
+      "qtype": "MA_U",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_U_Top004_050",
+      "qtype": "MA_U",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "MA_U_Top004_054",
+      "qtype": "MA_U",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Skill_Top004_006",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Skill_Top004_007",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Skill_Top004_014",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Skill_Top004_018",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Skill_Top004_022",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Skill_Top004_027",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Skill_Top004_029",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Skill_Top004_030",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Skill_Top004_033",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Skill_Top004_034",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Skill_Top004_035",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Skill_Top004_037",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Skill_Top004_039",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Skill_Top004_041",
+      "qtype": "P_Skill",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Style_Top004_001",
+      "qtype": "P_Style",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Style_Top004_002",
+      "qtype": "P_Style",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Style_Top004_008",
+      "qtype": "P_Style",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Style_Top004_017",
+      "qtype": "P_Style",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Style_Top004_018",
+      "qtype": "P_Style",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Style_Top004_019",
+      "qtype": "P_Style",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Style_Top004_020",
+      "qtype": "P_Style",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Style_Top004_021",
+      "qtype": "P_Style",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Style_Top004_022",
+      "qtype": "P_Style",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Style_Top004_026",
+      "qtype": "P_Style",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Title_Top004_009",
+      "qtype": "P_Title",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Title_Top004_018",
+      "qtype": "P_Title",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Title_Top004_027",
+      "qtype": "P_Title",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Title_Top004_029",
+      "qtype": "P_Title",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": true
+    },
+    {
+      "qid": "P_Title_Top004_031",
+      "qtype": "P_Title",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Title_Top004_033",
+      "qtype": "P_Title",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Title_Top004_038",
+      "qtype": "P_Title",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Title_Top004_040",
+      "qtype": "P_Title",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Title_Top004_045",
+      "qtype": "P_Title",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "CORRECT",
+      "retrieval_hit": false
+    },
+    {
+      "qid": "P_Title_Top004_049",
+      "qtype": "P_Title",
+      "window_class": "A",
+      "outcome": "delivered",
+      "verdict": "WRONG",
+      "retrieval_hit": false
+    }
+  ]
+}

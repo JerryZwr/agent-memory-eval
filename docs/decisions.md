@@ -152,3 +152,10 @@ METHODOLOGY 1.4 / 2.1 定义了 delivered / undelivered / env_failure / agent_er
 - **不根据这批样本修改 v2**：试跑中已看到 v2 把一道可回答题的拒答判成 CORRECT（规则 4 只适用于否定类标准答案）。按 METHODOLOGY 1.6，不在同一批样本上继续调 prompt；问题如实报告。若以后做 v3，必须并行报告并用没参与改写的留出样本评估。
 
 **影响**：无已有结果。
+
+## D-011 · 2026-10-20 · 记录：live-v1 中 mem0 只用了向量检索
+
+- **事实**：live-v1 的 mem0 运行日志里，mem0 打印了“spaCy is not installed”和“fastembed not installed - BM25 keyword search disabled”。也就是说，mem0 的混合检索（词形归一的实体检索、BM25 关键词检索）没有启用，本次 mem0 是**纯向量检索**配置。
+- **处理**：不追改 mem0 arm 的参数（会改变已完成运行的 `arm_config_hash`，使结果文件失效），而是在报告“局限”里写明这一配置事实，结论只适用于这个配置。
+- **以后若要启用**：安装 `mem0ai[nlp]` 和 `mem0ai[extras]`，在 mem0 arm 的参数里加上“混合检索已启用”的标记（进入配置哈希），作为新的 arm 配置重新灌入，与本次结果并行报告。
+- **影响**：live-v1 的 mem0 结果保持有效，但需要带着这条局限阅读。
