@@ -65,6 +65,7 @@ class RunResult:
     components: Components
     actions: dict[str, Action] = field(default_factory=dict)
     judge_records: list[JudgeRecord] = field(default_factory=list)
+    not_measured_reasons: list[str] = field(default_factory=list)  # red post-probes (live)
 
 
 def load_run_config(run_dir: Path) -> RunConfig:
@@ -101,6 +102,7 @@ def run_pipeline(
     answer_llm: LLM | None = None,
     judge: Judge | None = None,
     on_stage: Callable[[str, Action], None] | None = None,
+    probe: bool = True,
 ) -> RunResult:
     forced = set(force)
     unknown = forced - set(STAGES)
@@ -112,9 +114,16 @@ def run_pipeline(
     comps = build_components(cfg, answer_llm=answer_llm, judge=judge)
     questions = comps.questions()
     result = RunResult(run_dir=run_dir, components=comps)
+    probes = LiveProbes(run_dir, comps) if cfg.is_live and probe else None
+    if probes is not None:
+        probes.pre()
 
     upstream: StageFile | None = None
+    ingest_file: StageFile | None = None
     for stage in STAGES:
+        if stage == "search" and probes is not None:
+            assert ingest_file is not None
+            probes.after_ingest(ingest_file)
         action: Action | None = None
         if stage in forced:
             action = Action.FORCED
@@ -125,6 +134,8 @@ def run_pipeline(
             _check_meta(existing, comps, run_dir)
             if _upstream_of(upstream) == existing.upstream:
                 upstream = existing
+                if stage == "ingest":
+                    ingest_file = existing
                 result.actions[stage] = Action.REUSED
                 if on_stage:
                     on_stage(stage, Action.REUSED)
@@ -134,12 +145,17 @@ def run_pipeline(
         records = _compute(stage, comps, upstream, questions)
         meta = FileMeta(**comps.meta.model_dump(), created_at=utc_now(), git_commit=git_commit())
         upstream = write_stage(run_dir, stage, meta, _upstream_of(upstream), records)
+        if stage == "ingest":
+            ingest_file = upstream
         result.actions[stage] = action
         if on_stage:
             on_stage(stage, action)
 
     assert upstream is not None and upstream.stage == "judge"
     result.judge_records = parse_records(upstream, JudgeRecord)
+    if probes is not None:
+        assert ingest_file is not None
+        result.not_measured_reasons = probes.post(ingest_file)
     return result
 
 
@@ -147,11 +163,24 @@ def _upstream_of(sf: StageFile | None) -> Upstream | None:
     return None if sf is None else Upstream(stage=sf.stage, records_sha256=sf.records_sha256)
 
 
+# The settings each stage's output depends on. A stage file is reusable when these match;
+# e.g. answers do not depend on the judge, so the same answers can be re-judged with
+# another prompt version and the prompt stays the only variable (METHODOLOGY 1.5).
+_BASE_FIELDS = ("corpus_id", "arm", "arm_config_hash", "question_set")
+STAGE_FIELDS: dict[str, tuple[str, ...]] = {
+    "ingest": _BASE_FIELDS,
+    "search": (*_BASE_FIELDS, "scored_classes"),
+    "answer": (*_BASE_FIELDS, "scored_classes", "answer_model", "answer_prompt_version"),
+    "judge": (*_BASE_FIELDS, "scored_classes", "answer_model", "answer_prompt_version",
+              "judge_model", "judge_prompt_version"),
+}  # fmt: skip
+
+
 def _check_meta(sf: StageFile, comps: Components, run_dir: Path) -> None:
-    if sf.meta.run_meta() != comps.meta:
-        expected = comps.meta.model_dump()
-        got = sf.meta.run_meta().model_dump()
-        diff = {k: (got[k], expected[k]) for k in expected if got[k] != expected[k]}
+    expected = comps.meta.model_dump()
+    got = sf.meta.run_meta().model_dump()
+    diff = {k: (got[k], expected[k]) for k in STAGE_FIELDS[sf.stage] if got[k] != expected[k]}
+    if diff:
         raise StageError(
             f"{stage_path(run_dir, sf.stage)} was produced under different settings "
             f"(file vs run: {json.dumps(diff)}). Delete it or force the stage."
@@ -161,16 +190,103 @@ def _check_meta(sf: StageFile, comps: Components, run_dir: Path) -> None:
 def _compute(stage: Stage, comps: Components, upstream: StageFile | None, questions):
     ds = comps.dataset
     if stage == "ingest":
-        return st.run_ingest(ds, comps.new_arm())
+        arm = comps.new_arm()
+        try:
+            return st.run_ingest(ds, arm)
+        finally:
+            arm.close()  # release local stores (e.g. Qdrant's file lock) for the next stage
     assert upstream is not None
     if stage == "search":
         (ingest,) = parse_records(upstream, IngestRecord)
-        return st.run_search(
-            ds, comps.new_arm(), ingest, questions, comps.config.arm.top_k, comps.window_classes
-        )
+        arm = comps.new_arm()
+        try:
+            return st.run_search(ds, arm, ingest, questions, comps.config.arm.top_k,
+                                 comps.window_classes)  # fmt: skip
+        finally:
+            arm.close()
     if stage == "answer":
         return st.run_answer(ds, parse_records(upstream, SearchRecord), comps.answer_llm, questions)
     return st.run_judge(ds, parse_records(upstream, AnswerRecord), comps.judge, questions)
+
+
+# --------------------------------------------------------------------------- live probes
+
+PROBES_FILE = "probes.json"
+
+
+def _probe_dump(results) -> dict[str, dict[str, str]]:
+    return {k: {"status": r.status.value, "detail": r.detail} for k, r in results.items()}
+
+
+def _ingested_probe(comps: Components, ingest_file: StageFile, keys, canary=None):
+    from agentmemeval.probes import run_probes
+
+    (ingest,) = parse_records(ingest_file, IngestRecord)
+    arm = comps.new_arm()
+    try:
+        arm.attach(comps.dataset, ingest.summary)
+        return run_probes(comps, keys, ingested_arm=arm, canary=canary)
+    finally:
+        arm.close()
+
+
+class LiveProbes:
+    """Pre / after-ingest / post probes for live runs (METHODOLOGY 1.11), kept in probes.json."""
+
+    def __init__(self, run_dir: Path, comps: Components):
+        self.path = run_dir / PROBES_FILE
+        self.comps = comps
+        self.record: dict[str, object] = {}
+        self.canary: str | None = None
+
+    def _save(self) -> None:
+        write_json_atomic(self.path, self.record)
+
+    def pre(self) -> None:
+        from agentmemeval.probes import run_probes
+
+        results = run_probes(self.comps, ["llm", "memory_service"])
+        self.record = {"pre": _probe_dump(results), "checked_at": utc_now()}
+        self._save()
+        red = [f"{k} {r.status.value}: {r.detail}" for k, r in results.items() if not r.ok]
+        if red:
+            raise StageError("pre-probe not green, nothing measured: " + "; ".join(red))
+
+    def after_ingest(self, ingest_file: StageFile) -> None:
+        from agentmemeval.probes import canary_of
+
+        results = _ingested_probe(self.comps, ingest_file, ["corpus"])
+        self.record["after_ingest"] = _probe_dump(results)
+        self._save()
+        corpus = results["corpus"]
+        if not corpus.ok:
+            raise StageError(f"corpus probe not green after ingest: {corpus.detail}")
+        self.canary = canary_of(corpus)
+
+    def post(self, ingest_file: StageFile) -> list[str]:
+        """Re-probe after the run; a red post-probe marks the whole round not_measured."""
+        from agentmemeval.probes import run_probes
+
+        results = dict(run_probes(self.comps, ["llm", "memory_service"]))
+        results.update(_ingested_probe(self.comps, ingest_file, ["corpus"], self.canary))
+        reasons = [f"post-probe {k} {r.status.value}: {r.detail}" for k, r in results.items()
+                   if not r.ok]  # fmt: skip
+        self.record.update(
+            post=_probe_dump(results),
+            round_status="not_measured" if reasons else "measured",
+            round_not_measured_reasons=reasons,
+        )
+        if self.comps.live is not None:
+            self.record["usage"] = self.comps.live.ledger.summary()
+        self._save()
+        return reasons
+
+
+def read_probes(run_dir: Path) -> dict[str, object] | None:
+    path = run_dir / PROBES_FILE
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 @dataclass

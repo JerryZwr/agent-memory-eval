@@ -18,7 +18,7 @@ SMALL_SAMPLE = 30
 
 def check_comparable(results: Sequence[RunResult]) -> None:
     """Arms may only sit in one table if everything except the arm is identical."""
-    fields = ("corpus_id", "answer_model", "answer_prompt_version", "judge_model")
+    fields = ("corpus_id", "question_set", "answer_model", "answer_prompt_version", "judge_model")
     fields += ("judge_prompt_version",)
     first = results[0].components.meta
     for r in results[1:]:

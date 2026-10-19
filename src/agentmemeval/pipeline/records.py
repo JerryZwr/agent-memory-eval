@@ -21,7 +21,7 @@ from agentmemeval.arms.base import RetrievedItem
 from agentmemeval.data.models import EvidenceStatus
 from agentmemeval.judge.base import Label
 
-SCHEMA_VERSION = 2  # v2: window_class on question records, scored_classes in meta
+SCHEMA_VERSION = 3  # v3: question_set in meta (v2: window_class, scored_classes)
 STAGES = ("ingest", "search", "answer", "judge")
 Stage = Literal["ingest", "search", "answer", "judge"]
 
@@ -42,6 +42,7 @@ class RunMeta(_Model):
     judge_model: str
     judge_prompt_version: str
     scored_classes: str  # e.g. "A,D": which evidence-window classes were asked
+    question_set: str  # fingerprint of the exact qids asked (a pilot sample differs)
 
 
 class FileMeta(RunMeta):

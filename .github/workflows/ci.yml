@@ -33,7 +33,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --locked
+        run: uv sync --locked --extra live  # offline tests of the live adapters need openai + mem0ai
 
       - name: Lint
         run: uv run ruff check .

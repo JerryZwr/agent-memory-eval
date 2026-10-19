@@ -116,6 +116,47 @@ def cmd_agent_eval(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_live_init(args: argparse.Namespace) -> int:
+    from agentmemeval.live import init_session
+
+    arms = tuple(a.strip() for a in args.arms.split(",") if a.strip())
+    dirs = init_session(
+        Path(args.out), data=Path(args.data), days=args.days, sample=args.sample, arms=arms,
+        max_calls=args.max_calls, max_cost_cny=args.max_cost, top_k=args.top_k,
+    )  # fmt: skip
+    print(f"Live session at {Path(args.out)} (caps: {args.max_calls} calls, ¥{args.max_cost}).")
+    print("Nothing has been called yet. Run each arm with:")
+    for d in dirs:
+        print(f"  agentmemeval run --run-dir {d}")
+    return 0
+
+
+def cmd_rejudge(args: argparse.Namespace) -> int:
+    from agentmemeval.console import format_results
+    from agentmemeval.live import rejudge
+    from agentmemeval.pipeline.runner import run_pipeline
+
+    target = rejudge(Path(args.source), Path(args.target), version=args.judge_version)
+    result = run_pipeline(target, on_stage=_print_stage(target.name), probe=False)
+    print()
+    print(format_results([result]))
+    return 0
+
+
+def cmd_usage(args: argparse.Namespace) -> int:
+    from agentmemeval.llm.usage import UsageLedger
+
+    ledger = UsageLedger(Path(args.ledger), max_calls=10**9, max_cost_cny=10.0**9)
+    t = ledger.totals
+    print(f"{args.ledger}: {t.calls} paid calls, ¥{t.cost_cny:.4f}, {t.cache_hits} cache hits, "
+          f"{t.retries} retries, {t.failures} failures")  # fmt: skip
+    print(f"tokens: {t.prompt_tokens} in ({t.cache_hit_tokens} cache hits), "
+          f"{t.completion_tokens} out")  # fmt: skip
+    for purpose, b in sorted(t.by_purpose.items()):
+        print(f"  {purpose:<14} {int(b['calls']):>5} calls  ¥{b['cost_cny']:.4f}")
+    return 0
+
+
 def cmd_report(args: argparse.Namespace) -> int:
     from agentmemeval.report.build import write_report
 
@@ -189,6 +230,27 @@ def build_parser() -> argparse.ArgumentParser:
     )
     agent.set_defaults(func=cmd_agent_eval)
 
+    live = sub.add_parser("live-init", help="write run configs for a live (paid) session")
+    live.add_argument("--out", required=True, help="session directory, e.g. runs/live-v1")
+    live.add_argument("--data", default="data/raw/evermembench/a6b210a3", help="download dir")
+    live.add_argument("--days", type=int, default=90, help="ingest the first N days")
+    live.add_argument("--sample", type=int, help="pilot: ask only this many questions")
+    live.add_argument("--arms", default="null,bm25,mem0", help="comma-separated arms")
+    live.add_argument("--max-calls", type=int, default=4000, help="hard cap on paid calls")
+    live.add_argument("--max-cost", type=float, default=30.0, help="hard cap in CNY")
+    live.add_argument("--top-k", type=int, default=5)
+    live.set_defaults(func=cmd_live_init)
+
+    rj = sub.add_parser("rejudge", help="judge the same answers again with another prompt version")
+    rj.add_argument("--from", dest="source", required=True, help="finished run directory")
+    rj.add_argument("--to", dest="target", required=True, help="new run directory")
+    rj.add_argument("--judge-version", required=True, choices=["v1", "v2"])
+    rj.set_defaults(func=cmd_rejudge)
+
+    usage = sub.add_parser("usage", help="show paid calls and cost from a usage ledger")
+    usage.add_argument("--ledger", required=True, help="e.g. runs/live-v1/usage.jsonl")
+    usage.set_defaults(func=cmd_usage)
+
     report = sub.add_parser("report", help="build the HTML evaluation report from finished runs")
     report.add_argument(
         "--run", required=True, help="a run directory, or a directory of run directories"
@@ -230,6 +292,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     _force_utf8_console()
+    from agentmemeval.envfile import load_env_file
+
+    load_env_file()  # keys for live runs; values are never printed
     parser = build_parser()
     args = parser.parse_args(argv)
     # Each subcommand registers its handler via `set_defaults(func=...)`.

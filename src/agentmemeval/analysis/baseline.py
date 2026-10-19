@@ -41,7 +41,13 @@ from agentmemeval.provenance import utc_now
 BASELINE_SCHEMA = 1
 # Settings that must match for a diff to mean anything. The arm and its config
 # may differ: comparing configurations is the point of a diff.
-COMPARABILITY_FIELDS = ("corpus_id", "judge_model", "judge_prompt_version", "scored_classes")
+COMPARABILITY_FIELDS = (
+    "corpus_id",
+    "judge_model",
+    "judge_prompt_version",
+    "scored_classes",
+    "question_set",
+)
 
 
 class _Model(BaseModel):

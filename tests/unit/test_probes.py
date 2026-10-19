@@ -97,8 +97,28 @@ class TestDefaultProbes:
         out = run_probes(components, ["corpus"])
         assert out["memory_service"].status is PASS
         assert out["corpus"].status is FAIL
-        assert "no longer retrieves its evidence" in out["corpus"].detail
+        assert "retrieves evidence" in out["corpus"].detail
 
-    def test_null_arm_cannot_pass_the_corpus_probe(self):
+    def test_control_arm_probes_are_not_applicable_rather_than_red(self):
+        """A red probe would skip the control arm itself; it stores nothing by design."""
         out = run_probes(build_components(default_eval_config(arm="null")), ["corpus"])
-        assert out["corpus"].status is FAIL
+        assert out["corpus"].status is PASS
+        assert "not applicable" in out["corpus"].detail
+
+    def test_corpus_probe_picks_a_canary_and_rechecks_the_same_one(self, components):
+        from agentmemeval.probes import canary_of
+
+        arm = components.new_arm()
+        arm.add(components.dataset)
+        first = run_probes(components, ["corpus"], ingested_arm=arm)["corpus"]
+        canary = canary_of(first)
+        assert first.ok and canary is not None
+        again = run_probes(components, ["corpus"], ingested_arm=arm, canary=canary)["corpus"]
+        assert again.ok and canary_of(again) == canary
+
+    def test_memory_probe_writes_to_a_scratch_namespace_only(self, components):
+        arm = components.new_arm()
+        arm.add(components.dataset)
+        before = arm.search("canary word heliotrope", top_k=3)
+        assert run_probes(components, ["memory_service"])["memory_service"].ok
+        assert arm.search("canary word heliotrope", top_k=3) == before  # measured store untouched
