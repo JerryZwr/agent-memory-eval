@@ -8,6 +8,7 @@ Wilson 95% interval, and cells with n < 30 are flagged as qualitative only.
 
 from __future__ import annotations
 
+import json
 import webbrowser
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -184,6 +185,27 @@ def _limitations(runs: list[LoadedRun], arms: list[ArmView], include_b: bool) ->
             "开放题评分员是规则匹配的离线脚本，没有经过人工校准（METHODOLOGY 1.6），"
             "判分只反映规则本身。"
         )
+    else:
+        out.append(
+            f"开放题评分员是 LLM（{meta.judge_model}，口径 {meta.judge_prompt_version}），"
+            "未经人工校准：没有人工标注，也不报告任何人工一致性数字（D-009）。"
+            "v1 与 v2 两个口径之间的一致性只说明规则改动影响了哪些判定，"
+            "不说明哪个口径更接近人的判断。"
+        )
+        out.append(
+            "真实模型温度为 0、关闭思考模式，但服务端仍可能有非确定性；同一题重跑结果可能不同。"
+            "结论依据的是本次运行的结果文件。"
+        )
+        if not any(r.meta.arm == "everos" for r in runs):
+            out.append(
+                "真实被测记忆系统只有 mem0 一个（EverOS 未做，D-009），"
+                "无法给出两个真实系统之间的比较。"
+            )
+    if any(r.meta.arm == "mem0" for r in runs):
+        out.append(
+            "mem0 存的是抽取后的记忆而不是原始消息，因此“命中证据消息”判据对它不适用，"
+            "只按“命中证据当天”判定，这个判据比 bm25 的消息级判据宽松，二者的命中率不能直接比较。"
+        )
     if any(t.n < SMALL_SAMPLE for a in arms for _, t in a.by_class):
         out.append(
             f"多个格子样本量小于 {SMALL_SAMPLE}，区间很宽，仅供定性参考；"
@@ -296,6 +318,13 @@ def build_context(
         "stages": STAGES,
         "overall": [(a.name, tally(a.run.judge_records)) for a in arms],
         "agent": _agent_context(agent_runs or [], runs[0].meta.corpus_id),
+        # live-session material, filled in by write_report when the files exist
+        "probes": {},
+        "query_shapes": {},
+        "agreements": {},
+        "rule_checks": {},
+        "usage": None,
+        "public": False,
     }
 
 
@@ -317,13 +346,58 @@ def render(context: dict[str, Any]) -> str:
     return _environment().get_template("report.html.j2").render(**context)
 
 
-def write_report(path: Path, out: Path | None = None, *, open_browser: bool = False) -> Path:
+V2_DIR = "v2"
+USAGE_FILE = "usage.jsonl"
+
+
+def _live_extras(path: Path, runs: list[LoadedRun]) -> dict[str, Any]:
+    """Session-level material that exists only for live runs; every item read from a file."""
+    from agentmemeval.analysis.judge_agreement import judge_agreement, rule_check
+    from agentmemeval.analysis.query_shape import QUERY_SHAPE_FILE, summary_ratios
+    from agentmemeval.llm.usage import UsageLedger
+    from agentmemeval.pipeline.runner import read_probes
+
+    probes = {r.meta.arm: read_probes(r.run_dir) for r in runs}
+    shapes = {}
+    for r in runs:
+        f = r.run_dir / QUERY_SHAPE_FILE
+        if f.exists():
+            data = json.loads(f.read_text(encoding="utf-8"))
+            if data["question_set"] == r.meta.question_set:  # refuse a stale experiment
+                shapes[r.meta.arm] = {"summary": summary_ratios(data), "note": data["short_query"]}
+    agreements, rule_checks = {}, {}
+    for r in runs:
+        v2 = path / V2_DIR / r.meta.arm
+        if (v2 / "run.json").exists():
+            second = load_run(v2)
+            agreements[r.meta.arm] = judge_agreement(r, second)
+            rule_checks[r.meta.arm] = [rule_check(r), rule_check(second)]
+    usage = None
+    if (path / USAGE_FILE).exists():
+        usage = UsageLedger(path / USAGE_FILE, max_calls=10**9, max_cost_cny=10.0**9).summary()
+        usage.pop("ledger", None)  # a local path; not for publication
+    return {
+        "probes": {k: v for k, v in probes.items() if v},
+        "query_shapes": shapes,
+        "agreements": agreements,
+        "rule_checks": rule_checks,
+        "usage": usage,
+    }
+
+
+def write_report(
+    path: Path, out: Path | None = None, *, open_browser: bool = False, public: bool = False
+) -> Path:
+    """`public=True` omits question, gold, answer and retrieved text from the per-question
+    detail, so a published report does not redistribute the dataset (docs/decisions.md D-002)."""
     run_dirs = find_run_dirs(path)
     runs = [load_run(d) for d in run_dirs]
     agent_runs = find_agent_runs(path / AGENT_DIR)
+    context = build_context(runs, agent_runs)
+    context.update(_live_extras(path, sorted(runs, key=_arm_order)), public=public)
     target = out or (path / REPORT_NAME if len(run_dirs) > 1 else run_dirs[0] / REPORT_NAME)
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(render(build_context(runs, agent_runs)), encoding="utf-8", newline="\n")
+    target.write_text(render(context), encoding="utf-8", newline="\n")
     if open_browser:
         webbrowser.open(target.resolve().as_uri())
     return target

@@ -105,6 +105,8 @@ def cmd_agent_eval(args: argparse.Namespace) -> int:
     components = build_components(config)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
     out = Path(args.out) if args.out else Path("runs") / f"agent-{stamp}"
+    if args.live:
+        return _live_agent_eval(args, config, components, out)
     for policy in args.policy or list(POLICIES):
         run = run_agent_eval(
             policy, components, real_clock=args.real_clock, run_id=f"{out.name}-{policy}"
@@ -113,6 +115,50 @@ def cmd_agent_eval(args: argparse.Namespace) -> int:
     clock = "real clock" if args.real_clock else "simulated clock"
     print(f"Agent evaluation on {components.meta.corpus_id} ({clock}) -> {out}")
     print("\n".join(summary_lines([summarize(r) for r in find_agent_runs(out)])))
+    return 0
+
+
+def _live_agent_eval(args, config, components, out: Path) -> int:
+    import hashlib
+
+    from agentmemeval.agent.eval import run_agent_eval, summarize, summary_lines, write_agent_run
+    from agentmemeval.agent.tasks import extra_tasks, memory_tasks
+
+    if components.live is None:
+        print("agent-eval --live needs --eval-config with a `live` section", file=sys.stderr)
+        return 2
+    memory = sorted(
+        memory_tasks(components),
+        key=lambda t: hashlib.sha256(f"{config.questions.seed}:{t.task_id}".encode()).hexdigest(),
+    )[: args.sample]
+    tasks = memory + extra_tasks()
+    model = config.answer.model
+
+    def make_llm(clock):
+        return components.live.llm(model, "agent", base_url=config.answer.base_url,
+                                   max_tokens=512, stream=True, clock=clock)  # fmt: skip
+
+    run = run_agent_eval(f"live:{model}", components, tasks=tasks, make_llm=make_llm,
+                         run_id=f"{out.name}-live")  # fmt: skip
+    write_agent_run(out / "live.json", run)
+    print(f"Live agent evaluation ({len(tasks)} tasks, real clock) on {components.meta.corpus_id}")
+    print("\n".join(summary_lines([summarize(run)])))
+    return 0
+
+
+def cmd_query_shape(args: argparse.Namespace) -> int:
+    import json
+
+    from agentmemeval.analysis.query_shape import summary_ratios, write_query_shape
+    from agentmemeval.pipeline.runner import load_run
+
+    run = load_run(Path(args.run))
+    path = write_query_shape(run)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    print(f"{run.meta.arm}: query-shape experiment ({data['short_query']}) -> {path}")
+    for s in summary_ratios(data):
+        print(f"  {s['shape']:<13} evidence hit {s['hits']!s:<26} empty {s['empty']!s:<24} "
+              f"({s['criterion']} criterion)")  # fmt: skip
     return 0
 
 
@@ -161,7 +207,7 @@ def cmd_report(args: argparse.Namespace) -> int:
     from agentmemeval.report.build import write_report
 
     out = Path(args.out) if args.out else None
-    report = write_report(Path(args.run), out, open_browser=args.open)
+    report = write_report(Path(args.run), out, open_browser=args.open, public=args.public)
     print(f"Report: {report}")
     return 0
 
@@ -228,6 +274,11 @@ def build_parser() -> argparse.ArgumentParser:
     agent.add_argument(
         "--real-clock", action="store_true", help="measure wall time instead of simulated latency"
     )
+    agent.add_argument(
+        "--live", action="store_true", help="drive the agent with the real model (paid; needs a "
+        "live --eval-config)",
+    )  # fmt: skip
+    agent.add_argument("--sample", type=int, default=13, help="live: memory tasks to sample")
     agent.set_defaults(func=cmd_agent_eval)
 
     live = sub.add_parser("live-init", help="write run configs for a live (paid) session")
@@ -247,6 +298,10 @@ def build_parser() -> argparse.ArgumentParser:
     rj.add_argument("--judge-version", required=True, choices=["v1", "v2"])
     rj.set_defaults(func=cmd_rejudge)
 
+    qs = sub.add_parser("query-shape", help="query-shape sensitivity experiment on a finished run")
+    qs.add_argument("--run", required=True, help="finished run directory")
+    qs.set_defaults(func=cmd_query_shape)
+
     usage = sub.add_parser("usage", help="show paid calls and cost from a usage ledger")
     usage.add_argument("--ledger", required=True, help="e.g. runs/live-v1/usage.jsonl")
     usage.set_defaults(func=cmd_usage)
@@ -257,6 +312,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     report.add_argument("--out", help="output file (default: <run>/report.html)")
     report.add_argument("--open", action="store_true", help="open the report in a browser")
+    report.add_argument(
+        "--public",
+        action="store_true",
+        help="omit question, gold, answer and retrieved text (for publishing; D-002)",
+    )
     report.set_defaults(func=cmd_report)
 
     baseline = sub.add_parser("baseline", help="freeze a baseline or diff a run against one")

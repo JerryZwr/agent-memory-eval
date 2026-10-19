@@ -224,3 +224,27 @@ def test_report_over_a_live_session(endpoint, tmp_path):
     html = write_report(tmp_path).read_text(encoding="utf-8")
     assert "deepseek-v4-pro+thinking=off" in html
     assert "不适用" in html  # mem0 returns memories: the message-level hit criterion n/a
+
+
+def test_live_report_sections_and_public_mode(endpoint, tmp_path):
+    from agentmemeval.analysis.query_shape import write_query_shape
+    from agentmemeval.pipeline.runner import load_run
+
+    for arm in ("null", "bm25"):
+        run_pipeline(tmp_path / arm, _config(tmp_path, arm))
+    write_query_shape(load_run(tmp_path / "bm25"))
+    target = rejudge(tmp_path / "bm25", tmp_path / "v2" / "bm25", version="v2")
+    run_pipeline(target, probe=False)
+
+    full = write_report(tmp_path).read_text(encoding="utf-8")
+    for heading in ("运行状态与费用", "查询形态敏感性实验", "评分员口径对比", "未经人工校准"):
+        assert heading in full, heading
+    question = "Which database is the primary database for the Heron scheduling service?"
+    assert question in full
+
+    public = write_report(tmp_path, tmp_path / "public.html", public=True).read_text(
+        encoding="utf-8"
+    )
+    assert question not in public  # no dataset text in the published version
+    assert "PostgreSQL" not in public  # no answers or retrieved dialogue either
+    assert "usage.jsonl" in public and str(tmp_path) not in public  # no local paths

@@ -198,7 +198,8 @@ class Agent:
                             ChatMessage("user", render_task(task)),
                         ]
                     )
-                    route = resp.text.strip().lower()
+                    # real models may add punctuation or quotes around the label
+                    route = resp.text.strip().lower().strip(" .\"'`")
                     s.attributes.update(route=route, ttft_s=resp.ttft_s)
 
                 messages = [

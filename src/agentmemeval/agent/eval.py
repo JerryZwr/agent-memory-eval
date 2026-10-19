@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from statistics import mean
@@ -31,11 +32,12 @@ from agentmemeval.analysis.scoring import Ratio
 from agentmemeval.errors import StageError
 from agentmemeval.judge.base import Judge
 from agentmemeval.judge.scripted import ScriptedJudge
+from agentmemeval.llm.base import LLM
 from agentmemeval.pipeline.config import Components
 from agentmemeval.pipeline.records import records_sha256
 from agentmemeval.pipeline.store import write_json_atomic
 from agentmemeval.provenance import git_commit, utc_now
-from agentmemeval.tracing import FakeClock, RealClock, latency_breakdown
+from agentmemeval.tracing import Clock, FakeClock, RealClock, latency_breakdown
 
 AGENT_SCHEMA = 1
 
@@ -153,11 +155,17 @@ def run_agent_eval(
     real_clock: bool = False,
     judge: Judge | None = None,
     run_id: str = "agent-eval",
+    make_llm: Callable[[Clock], LLM] | None = None,
 ) -> AgentRunFile:
+    """`make_llm` replaces the scripted policy with a real model (live; implies real_clock).
+
+    `policy` is then just the label recorded in the metadata.
+    """
     budget = budget or Budget()
     latency = latency or SimulatedLatency()
     judge = judge or ScriptedJudge()
     tasks = tasks if tasks is not None else all_tasks(components)
+    real_clock = real_clock or make_llm is not None
     arm = components.new_arm()
     arm.add(components.dataset)
     records = []
@@ -165,9 +173,12 @@ def run_agent_eval(
     for spec in tasks:
         clock = RealClock() if real_clock else FakeClock()
         sim = not real_clock
-        llm = make_policy_llm(policy, clock=clock if sim else None,
-                              latency_s=latency.llm_s if sim else 0.0,
-                              ttft_s=latency.ttft_s if sim else 0.0)  # fmt: skip
+        if make_llm is not None:
+            llm = make_llm(clock)
+        else:
+            llm = make_policy_llm(policy, clock=clock if sim else None,
+                                  latency_s=latency.llm_s if sim else 0.0,
+                                  ttft_s=latency.ttft_s if sim else 0.0)  # fmt: skip
         model = llm.model
         tools = {
             "memory_search": MemorySearchTool(arm, top_k=components.config.arm.top_k, clock=clock,

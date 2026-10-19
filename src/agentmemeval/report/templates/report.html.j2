@@ -97,6 +97,30 @@ svg .whisker { stroke: var(--fg); stroke-width: 1.5; }
 {% endfor %}
 </ul>
 
+{% if probes or usage %}
+<h2>运行状态与费用</h2>
+<p class="note">真实运行前后都跑环境探针（METHODOLOGY 1.11）：灌入前检查 LLM 可达、记忆服务可写（写入临时命名空间），灌入后选定一道能检索到证据的“金丝雀”题，运行结束后复查同一道题。后置探针变红时，整轮结果标为未测到。</p>
+{% if probes %}
+<div class="table-wrap"><table>
+<tr><th>arm</th><th>整轮状态</th><th>前置探针</th><th>灌入后</th><th>后置探针</th></tr>
+{% for arm, p in probes.items() %}
+<tr><td>{{ arm }}</td>
+<td>{% if p.get("round_status") == "measured" %}<span class="badge CORRECT">已测量</span>{% else %}<span class="badge WRONG">{{ p.get("round_status", "未完成") }}</span>{% endif %}</td>
+{% for phase in ("pre", "after_ingest", "post") %}<td>{% for k, v in p.get(phase, {}).items() %}{{ k }}={{ v.status }}{% if not loop.last %}，{% endif %}{% endfor %}</td>{% endfor %}</tr>
+{% endfor %}
+</table></div>
+{% endif %}
+{% if usage %}
+<p>付费调用 <strong>{{ usage.calls }}</strong> 次，按官方高峰价计费 <strong>¥{{ "%.2f" | format(usage.cost_cny) }}</strong>（上限 {{ usage.max_calls }} 次 / ¥{{ "%.0f" | format(usage.max_cost_cny) }}）；缓存命中 {{ usage.cache_hits }} 次，重试 {{ usage.retries }} 次，最终失败 {{ usage.failures }} 次。
+输入 {{ usage.prompt_tokens }} token（其中服务端缓存命中 {{ usage.cache_hit_tokens }}），输出 {{ usage.completion_tokens }} token。数字来自会话的调用账本 <code>usage.jsonl</code>。</p>
+<div class="table-wrap"><table>
+<tr><th>用途</th><th>调用次数</th><th>费用 ¥</th></tr>
+{% for purpose, b in usage.by_purpose.items() | sort %}<tr><td>{{ purpose }}</td><td class="num">{{ b.calls | int }}</td><td class="num">{{ "%.4f" | format(b.cost_cny) }}</td></tr>
+{% endfor %}
+</table></div>
+{% endif %}
+{% endif %}
+
 <h2>计分范围</h2>
 <p>灌入的天数：{{ dataset.days[0] }} 至 {{ dataset.days[-1] }}（{{ dataset.days | length }} 天，{{ dataset.messages | length }} 条消息）。
 题目覆盖整个语料期，只提问、计分证据窗口允许的类别（METHODOLOGY 1.3）。</p>
@@ -168,6 +192,52 @@ svg .whisker { stroke: var(--fg); stroke-width: 1.5; }
 {% endfor %}{% endfor %}
 </div>
 
+{% if query_shapes %}
+<h2>查询形态敏感性实验</h2>
+<p class="note">同一批有证据位置的题，用三种查询各检索一次（METHODOLOGY 1.9）：① 只用题干；② 题干 + 全部选项；③ 短查询。短查询是<strong>自动截取的题干实词</strong>，不是人工改写（D-010）。只检索、不写入、不调用 LLM。</p>
+<div class="table-wrap"><table>
+<tr><th>arm</th><th>查询形态</th><th>证据命中率</th><th>空结果率</th><th>命中判据</th></tr>
+{% for arm, qs in query_shapes.items() %}{% for s in qs.summary %}
+<tr><td>{{ arm }}</td><td>{{ {"stem": "① 只用题干", "stem_options": "② 题干 + 选项", "short": "③ 短查询（自动）"}[s.shape] }}</td>
+<td>{{ rate(s.hits) }}</td><td>{{ rate(s.empty) }}</td><td>{{ "证据消息" if s.criterion == "message" else "证据当天" }}</td></tr>
+{% endfor %}{% endfor %}
+</table></div>
+{% endif %}
+
+{% if agreements %}
+<h2>评分员口径对比：v1 与 v2</h2>
+<p class="note">同一份答案分别用 v1（宽松）和 v2（加拒答规则、收紧宽松边界）判分，提示词是唯一变量（METHODOLOGY 1.5）。
+这是<strong>两个评分员口径之间</strong>的一致性，不是与人工判断的一致性；本项目没有做人工校准。</p>
+{% for arm, ag in agreements.items() %}
+<h3>{{ arm }}：{{ ag.first_version }} vs {{ ag.second_version }}</h3>
+<p>一致率 {{ rate(ag.agreement) }}；Cohen's κ = {{ "%.2f" | format(ag.kappa) if ag.kappa is not none else "n/a" }}{% if ag.kappa_interval %}（bootstrap 95% 区间 [{{ "%.2f" | format(ag.kappa_interval.low) }}, {{ "%.2f" | format(ag.kappa_interval.high) }}]）{% endif %}；判定翻转 {{ ag.flips | length }} 题。</p>
+<div class="table-wrap"><table>
+<tr><th>{{ ag.first_version }} \ {{ ag.second_version }}</th><th>CORRECT</th><th>WRONG</th></tr>
+{% for x in ("CORRECT", "WRONG") %}<tr><th>{{ x }}</th>{% for y in ("CORRECT", "WRONG") %}<td class="num">{{ ag.confusion.get(x, {}).get(y, 0) }}</td>{% endfor %}</tr>
+{% endfor %}
+</table></div>
+<div class="table-wrap"><table>
+<tr><th>题型</th><th>两口径一致率</th></tr>
+{% for qt, r in ag.by_qtype.items() %}<tr><td>{{ qt }}</td><td>{{ rate(r) }}</td></tr>{% endfor %}
+</table></div>
+{% if arm in rule_checks %}
+<p class="note"><strong>规则一致性自动检查</strong>（按评分员提示词里写下的规则机械检查，不是人工标注，只用于定位可疑判定）：</p>
+<div class="table-wrap"><table>
+<tr><th>口径</th><th>检查的判定数</th><th>可回答题：答案是拒答且不含标准答案，却判 CORRECT（违反规则 1）</th><th>无证据题：纯拒答却判 WRONG（违反 v2 规则 4；v1 无此规则）</th></tr>
+{% for rc in rule_checks[arm] %}<tr><td>{{ rc.version }}</td><td class="num">{{ rc.checked }}</td>
+<td class="num">{{ rc.refusal_on_answerable_judged_correct | length }}{% if rc.refusal_on_answerable_judged_correct %} <span class="note">{{ rc.refusal_on_answerable_judged_correct | join(", ") }}</span>{% endif %}</td>
+<td class="num">{{ rc.refusal_on_no_evidence_judged_wrong | length }}</td></tr>
+{% endfor %}
+</table></div>
+{% endif %}
+{% if ag.flips %}
+<details><summary>翻转的题（{{ ag.flips | length }}）</summary><div class="detail-body"><ul>
+{% for f in ag.flips %}<li><code>{{ f.qid }}</code> {{ f.first }} → {{ f.second }}{% if not public %}<br><span class="note">{{ ag.first_version }}：{{ f.first_reason }}<br>{{ ag.second_version }}：{{ f.second_reason }}</span>{% endif %}</li>
+{% endfor %}</ul></div></details>
+{% endif %}
+{% endfor %}
+{% endif %}
+
 {% if agent %}
 <h2>Agent 层指标 {{ small_flag() }}</h2>
 <p class="note">同一份语料上，用 {{ agent.summaries | length }} 种脚本化策略驱动同一个极简 Agent：<code>good</code> 是参照，其余每种模拟一种已知缺陷（METHODOLOGY 2.1）。
@@ -228,7 +298,11 @@ svg .whisker { stroke: var(--fg); stroke-width: 1.5; }
 {% endif %}
 
 <h2>逐题明细</h2>
+{% if public %}
+<p class="note">公开版只列出每道题在各 arm 上的结局与判分；题目、标准答案、模型答案和检索到的对话原文不随公开报告分发（数据集许可与引用约定见 docs/decisions.md D-002）。完整明细在本地结果文件中。</p>
+{% else %}
 <p class="note">点开查看题目、标准答案、各 arm 的答案、判分理由和检索返回的前几条（✔ = 证据消息）。</p>
+{% endif %}
 {% for qv in questions %}
 <details>
 <summary><code>{{ qv.question.qid }}</code><span class="note">{{ qv.window_class.value }} 类</span>
@@ -238,6 +312,9 @@ svg .whisker { stroke: var(--fg); stroke-width: 1.5; }
 {% else %}<span class="badge {{ pa.judge.verdict }}">{{ pa.judge.verdict }}</span>{% endif %}
 {% if pa.judge is not none and pa.judge.ambiguous_extraction %}<span class="flag">歧义提取</span>{% endif %}</span>
 {% endfor %}</summary>
+{% if public %}
+<div class="detail-body"><p class="note">{% for pa in qv.per_arm %}{% if pa.judge is not none %}{{ pa.arm }}：结局 {{ pa.judge.outcome.value }}{% if pa.judge.method == "mc_extraction" %}，提取到 {{ pa.judge.extracted_choice or "无" }}{% endif %}{% if pa.hit is not none %}，检索{{ "命中" if pa.hit else "未命中" }}证据消息{% endif %}。{% endif %}{% endfor %}</p></div>
+{% else %}
 <div class="detail-body">
 <p><strong>题目：</strong>{{ qv.question.question }}</p>
 {% if qv.question.options %}<ul>{% for k, v in qv.question.options.items() %}<li>{{ k }}. {{ v }}</li>{% endfor %}</ul>{% endif %}
@@ -255,6 +332,7 @@ svg .whisker { stroke: var(--fg); stroke-width: 1.5; }
 {% endfor %}</ol>{% else %}<p class="note">检索没有返回任何内容。</p>{% endif %}
 {% endif %}{% endfor %}
 </div>
+{% endif %}
 </details>
 {% endfor %}
 
