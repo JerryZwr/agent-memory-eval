@@ -248,3 +248,21 @@ def test_live_report_sections_and_public_mode(endpoint, tmp_path):
     assert question not in public  # no dataset text in the published version
     assert "PostgreSQL" not in public  # no answers or retrieved dialogue either
     assert "usage.jsonl" in public and str(tmp_path) not in public  # no local paths
+
+
+def test_publish_bundle_has_no_dataset_text_or_local_paths(endpoint, tmp_path):
+    from agentmemeval.report.publish import publish
+
+    session = tmp_path / "session"
+    for arm in ("null", "bm25"):
+        run_pipeline(session / arm, _config(session, arm))
+    report, summary = publish(session, tmp_path / "public")
+    text = report.read_text(encoding="utf-8") + summary.read_text(encoding="utf-8")
+    data = json.loads(summary.read_text(encoding="utf-8"))
+    assert set(data["arms"]) == {"null", "bm25"}
+    row = data["arms"]["bm25"]["questions"][0]
+    assert set(row) >= {"qid", "outcome", "verdict", "hit_message", "hit_date"}
+    assert data["arms"]["bm25"]["stage_records_sha256"]["judge"]
+    for leak in ("Which database is the primary database", "PostgreSQL", str(tmp_path),
+                 tmp_path.as_posix()):  # fmt: skip
+        assert leak not in text, leak

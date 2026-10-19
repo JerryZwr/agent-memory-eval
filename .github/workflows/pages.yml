@@ -89,6 +89,16 @@ jobs:
       - name: Landing page
         run: cp .github/pages/index.html site/index.html
 
+      - name: Committed live results (public bundles; CI cannot rerun paid calls)
+        run: |
+          for d in results/*/; do
+            [ -f "$d/report.html" ] || continue
+            name=$(basename "$d")
+            mkdir -p "site/live/$name"
+            cp "$d/report.html" "site/live/$name/index.html"
+            cp "$d/summary.json" "site/live/$name/summary.json"
+          done
+
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: site

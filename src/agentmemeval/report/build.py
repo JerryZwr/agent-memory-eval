@@ -203,6 +203,11 @@ def _limitations(runs: list[LoadedRun], arms: list[ArmView], include_b: bool) ->
             )
     if any(r.meta.arm == "mem0" for r in runs):
         out.append(
+            "mem0 在本次运行中只用了向量检索：它的混合检索（spaCy 词形归一、fastembed 关键词检索）"
+            "需要额外安装 mem0ai[nlp] / mem0ai[extras]，运行环境里没有装，mem0 自己打印了警告"
+            "（D-011）。结论只适用于这个配置。"
+        )
+        out.append(
             "mem0 存的是抽取后的记忆而不是原始消息，因此“命中证据消息”判据对它不适用，"
             "只按“命中证据当天”判定，这个判据比 bm25 的消息级判据宽松，二者的命中率不能直接比较。"
         )

@@ -23,7 +23,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, ValidationError
 
 from agentmemeval.agent import checks
-from agentmemeval.agent.core import Agent, AgentResult, Budget
+from agentmemeval.agent.core import AGENT_PROMPT_VERSION, Agent, AgentResult, Budget
 from agentmemeval.agent.policies import POLICIES, make_policy_llm
 from agentmemeval.agent.tasks import TaskSpec, all_tasks, judge_answer
 from agentmemeval.agent.tools import MemorySearchTool, WebSearchTool
@@ -62,6 +62,8 @@ class AgentMeta(_Model):
     corpus_id: str
     policy: str
     agent_model: str
+    # Files written before prompts were versioned used agent-v1.
+    agent_prompt_version: str = "agent-v1"
     arm: str
     arm_config_hash: str
     judge_model: str
@@ -199,6 +201,7 @@ def run_agent_eval(
             corpus_id=meta.corpus_id,
             policy=policy,
             agent_model=model or f"scripted-agent/{policy}",
+            agent_prompt_version=AGENT_PROMPT_VERSION,
             arm=meta.arm,
             arm_config_hash=meta.arm_config_hash,
             judge_model=judge.model,

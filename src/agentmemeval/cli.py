@@ -138,9 +138,12 @@ def _live_agent_eval(args, config, components, out: Path) -> int:
         return components.live.llm(model, "agent", base_url=config.answer.base_url,
                                    max_tokens=512, stream=True, clock=clock)  # fmt: skip
 
-    run = run_agent_eval(f"live:{model}", components, tasks=tasks, make_llm=make_llm,
-                         run_id=f"{out.name}-live")  # fmt: skip
-    write_agent_run(out / "live.json", run)
+    from agentmemeval.agent.core import AGENT_PROMPT_VERSION
+
+    label = f"live:{model}:{AGENT_PROMPT_VERSION}"
+    run = run_agent_eval(label, components, tasks=tasks, make_llm=make_llm,
+                         run_id=f"{out.name}-live-{AGENT_PROMPT_VERSION}")  # fmt: skip
+    write_agent_run(out / f"live-{AGENT_PROMPT_VERSION}.json", run)
     print(f"Live agent evaluation ({len(tasks)} tasks, real clock) on {components.meta.corpus_id}")
     print("\n".join(summary_lines([summarize(run)])))
     return 0
@@ -159,6 +162,15 @@ def cmd_query_shape(args: argparse.Namespace) -> int:
     for s in summary_ratios(data):
         print(f"  {s['shape']:<13} evidence hit {s['hits']!s:<26} empty {s['empty']!s:<24} "
               f"({s['criterion']} criterion)")  # fmt: skip
+    return 0
+
+
+def cmd_publish(args: argparse.Namespace) -> int:
+    from agentmemeval.report.publish import publish
+
+    for path in publish(Path(args.session), Path(args.out)):
+        print(f"wrote {path}")
+    print("Public bundle: no dataset text, no local paths. Review it, then commit it.")
     return 0
 
 
@@ -301,6 +313,11 @@ def build_parser() -> argparse.ArgumentParser:
     qs = sub.add_parser("query-shape", help="query-shape sensitivity experiment on a finished run")
     qs.add_argument("--run", required=True, help="finished run directory")
     qs.set_defaults(func=cmd_query_shape)
+
+    pub = sub.add_parser("publish", help="export a live session as a public, committable bundle")
+    pub.add_argument("--session", required=True, help="session directory, e.g. runs/live-v1")
+    pub.add_argument("--out", required=True, help="output directory, e.g. results/live-v1")
+    pub.set_defaults(func=cmd_publish)
 
     usage = sub.add_parser("usage", help="show paid calls and cost from a usage ledger")
     usage.add_argument("--ledger", required=True, help="e.g. runs/live-v1/usage.jsonl")

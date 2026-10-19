@@ -23,7 +23,9 @@ a.card strong { color: var(--accent); font-size: 18px; }
 <body>
 <main>
 <h1>agent-memory-eval</h1>
-<p>AI 记忆系统与 Agent 评测框架。两份报告都由 CI 从仓库内容离线生成（合成语料，无 API key）。</p>
+<p>AI 记忆系统与 Agent 评测框架。前两份报告由 CI 从仓库内容离线生成（合成语料，无 API key）；真实运行的报告是作者本地运行后提交的公开版。</p>
+<a class="card" href="live/live-v1/"><strong>真实运行：EverMemBench 004 批（DeepSeek + mem0）</strong><br>
+  null / bm25 / mem0 在 188 道题上的配对比较，评分员 v1 与 v2 并行、规则一致性检查、查询形态实验、真实模型驱动的 Agent 评测、费用账本。公开版不含数据集原文。</a>
 <a class="card" href="report/"><strong>评测报告</strong><br>
   null 对照组 vs bm25：带 95% 区间的总表、配对 McNemar 检验、按题型 / 证据范围拆分、检索 × 判分 2×2、逐题明细。</a>
 <a class="card" href="allure/"><strong>Allure 测试报告</strong><br>

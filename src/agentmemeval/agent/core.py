@@ -52,10 +52,16 @@ ROUTER_SYSTEM = (
     "ROUTER. Classify the user's question as exactly one word: memory, web or chitchat. "
     + ROUTING_RULE
 )
+# agent-v1: first live run. agent-v2 fixes two defects that run exposed: the router saw the
+# multiple-choice options and answered the question instead of routing it, and the agent kept
+# refining searches until the same-tool budget stopped it. Changing these prompts changes the
+# system under test, so the version is recorded with every agent result.
+AGENT_PROMPT_VERSION = "agent-v2"
 AGENT_SYSTEM = (
     "AGENT. Answer the user's question. Use memory_search for the team's chat history and "
-    "web_search for general knowledge. Deliver the answer with final_answer. If the tools "
-    "do not contain the answer, say you cannot find it; never guess."
+    "web_search for general knowledge. Search at most twice; then deliver the answer with "
+    "final_answer (for multiple choice, the letter of the best option). If the results do not "
+    "contain the answer, call final_answer saying you cannot find it in the records; never guess."
 )
 
 
@@ -195,7 +201,8 @@ class Agent:
                     resp = self.llm.complete(
                         [
                             ChatMessage("system", ROUTER_SYSTEM),
-                            ChatMessage("user", render_task(task)),
+                            # the question only: shown the options, a model answers instead
+                            ChatMessage("user", render_task(AgentTask(task.question))),
                         ]
                     )
                     # real models may add punctuation or quotes around the label
