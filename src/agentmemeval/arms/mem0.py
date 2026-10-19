@@ -23,6 +23,7 @@ mem0 telemetry is switched off before mem0 is imported.
 
 from __future__ import annotations
 
+import gc
 import os
 from collections import defaultdict
 from collections.abc import Callable
@@ -192,12 +193,14 @@ class Mem0Arm(MemoryArm):
         self._open()
 
     def close(self) -> None:
-        """Release the local Qdrant lock so another instance (stage, probe) can open the store."""
+        """Release the local Qdrant lock and mem0's history DB so another instance can open them."""
         if self._memory is not None:
             client = getattr(self._memory.vector_store, "client", None)
             if client is not None:
                 client.close()
+            self._memory.close()  # mem0's own SQLite history connection
             self._memory = None
+            gc.collect()  # Windows keeps file handles until the objects are actually freed
 
     def search(self, query: str, top_k: int) -> list[RetrievedItem]:
         memory = self._open()

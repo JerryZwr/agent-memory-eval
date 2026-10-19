@@ -19,6 +19,7 @@ dependencies = [
 live = [
     "openai>=1.0",
     "mem0ai>=0.1",
+    "ollama>=0.4",
 ]
 # Fetching the public EverMemBench dataset (scripts/download_data.py).
 data = [

@@ -119,6 +119,7 @@ class TestDefaultProbes:
     def test_memory_probe_writes_to_a_scratch_namespace_only(self, components):
         arm = components.new_arm()
         arm.add(components.dataset)
-        before = arm.search("canary word heliotrope", top_k=3)
+        before = arm.search("release codename Heliotrope", top_k=3)
         assert run_probes(components, ["memory_service"])["memory_service"].ok
-        assert arm.search("canary word heliotrope", top_k=3) == before  # measured store untouched
+        after = arm.search("release codename Heliotrope", top_k=3)
+        assert after == before  # the measured store is untouched

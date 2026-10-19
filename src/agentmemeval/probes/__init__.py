@@ -114,11 +114,13 @@ CANARY_PREFIX = "canary="
 def _canary_dataset(components: Components) -> Dataset:
     """Two synthetic messages for the write probe; written to a scratch namespace only."""
     day = components.dataset.days[0]
-    texts = ["Probe check: the canary word for this run is heliotrope.",
-             "Probe check: heliotrope is only used by the environment probe."]  # fmt: skip
+    # Written like ordinary team chat: memory systems (rightly) skip text that reads like a
+    # system message, and a canary that is never stored would make the probe red for no reason.
+    texts = ["Team, we agreed today that the release codename for the next version is Heliotrope.",
+             "Noted. I will put the codename Heliotrope on the release checklist."]  # fmt: skip
     msgs = [
         Message(id=message_id(day, "probe", i), date=day, group="probe", index=i,
-                speaker="probe", time=f"{day} 00:00:0{i}", text=t)
+                speaker="Alex Morgan", time=f"{day} 00:00:0{i}", text=t)
         for i, t in enumerate(texts, start=1)
     ]  # fmt: skip
     return _build_dataset("probe", msgs, [])
@@ -176,10 +178,12 @@ def run_probes(
         return f"{components.answer_llm.model} replied"
 
     def memory_service() -> str:
-        with tempfile.TemporaryDirectory(prefix="agentmemeval-probe-") as scratch:
+        # ignore_cleanup_errors: on Windows a local store may hold its files a moment longer.
+        with tempfile.TemporaryDirectory(prefix="agentmemeval-probe-",
+                                         ignore_cleanup_errors=True) as scratch:  # fmt: skip
             arm = components.new_probe_arm(Path(scratch))
             arm.add(_canary_dataset(components))  # a write, not just a connection check
-            found = arm.search("What is the canary word for this run?", top_k=3)
+            found = arm.search("What is the release codename for the next version?", top_k=3)
             assert found, f"{arm.name} accepted a write but the search found nothing"
             arm.close()
             return f"{arm.name} wrote and read back a canary in a scratch namespace"

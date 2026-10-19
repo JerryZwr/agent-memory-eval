@@ -257,11 +257,15 @@ class OpenAICompatLLM(LLM):
         if hit is None:
             details = getattr(usage, "prompt_tokens_details", None)
             hit = getattr(details, "cached_tokens", 0) if details else 0
-        return {
+        out: dict[str, Any] = {
             "prompt_tokens": int(usage.prompt_tokens or 0),
             "cache_hit_tokens": int(hit or 0),
             "completion_tokens": int(usage.completion_tokens or 0),
         }
+        dump = getattr(usage, "model_dump", None)
+        if callable(dump):
+            out["raw"] = dump()  # provider fields as returned, so accounting can be audited
+        return out
 
     def _raw_from_completion(self, resp: Any) -> dict[str, Any]:
         msg = resp.choices[0].message
