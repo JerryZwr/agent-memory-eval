@@ -43,3 +43,37 @@ jobs:
 
       - name: Tests (offline)
         run: uv run pytest
+
+  quickstart:
+    # The README's quick start, verbatim, on a clean runner with no uv cache (PLAN M6):
+    # what a first-time visitor gets, timed. Plain `uv sync`, no extras, as the README says.
+    name: README quick start (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-24.04]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false
+
+      - name: uv sync && uv run agentmemeval demo
+        run: |
+          start=$(date +%s)
+          uv sync
+          uv run agentmemeval demo
+          elapsed=$(( $(date +%s) - start ))
+          report=$(ls runs/demo-*/report.html)
+          test -s "$report"
+          echo "Quick start on ${{ matrix.os }}: ${elapsed}s from a cold uv cache to $report" \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$elapsed" -lt 300  # the README promises 5 minutes
+
+      - name: README headline is up to date
+        run: uv run agentmemeval readme --check
