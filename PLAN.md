@@ -30,7 +30,7 @@
 | M3 | pytest 插件 + Allure + GitHub Pages | 8–10 h | 否 | ✅ |
 | M4 | 极简 Agent + 追踪 + Agent 层 9 个测试维度 | 10–12 h | 否 | ✅ |
 | M5 | 真实运行：真实 LLM、mem0（可选 EverOS）、评分员校准、查询形态实验 | 8–12 h | **是**（需预算确认） | 🟡 除人工校准外完成 |
-| M6 | 打磨：README 首屏、findings、图表、徽章 | 4–6 h | 否 | ⬜ |
+| M6 | 打磨：README 首屏、findings、图表、徽章 | 4–6 h | 否 | 🟡 除真人试跑外完成 |
 
 合计约 50–60 小时。M0–M4 全部离线，**不需要任何 key**，CI 能完整跑通；只有 M5 花钱。
 
@@ -158,8 +158,10 @@
 5. 用一个全新的 Windows 环境（或 GitHub Codespaces）完整走一遍 README 的快速开始。
 
 完成标准：
-- [ ] 一个从没见过本项目的人，照着 README 能在 5 分钟内跑出 demo 报告
-- [ ] README 里的每个结论都链接到报告或 findings 的对应位置
+- [ ] 一个从没见过本项目的人，照着 README 能在 5 分钟内跑出 demo 报告（**机器部分已验证，真人试跑待作者找人做**：CI 的 `quickstart` job 在干净的 Windows / Ubuntu runner 上、关闭 uv 缓存，逐字执行 README 的快速开始，run 39362963155 分别用时 6 s / 2 s，超过 300 s 即失败；本地从全新克隆、空 uv 缓存、重新下载 Python 起 12 s）
+- [x] README 里的每个结论都链接到报告或 findings 的对应位置（“读法”逐条链接 `docs/findings.md#f1…#f8`、`#limits`；结果表和图由 `agentmemeval readme` 从 `results/live-v1/summary.json` 生成，`tests/unit/test_headline.py` 在 CI 里校验一致）
+
+完成情况：任务 1–5 都已完成。覆盖率徽章是可选项，没有做。findings 第一部分为 16 条常见错误，每条配反例和测试。
 
 ---
 
