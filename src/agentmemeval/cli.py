@@ -174,6 +174,22 @@ def cmd_publish(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_readme(args: argparse.Namespace) -> int:
+    from agentmemeval.report.headline import stale, write
+
+    paths = (Path(args.summary), Path(args.readme), Path(args.figure))
+    if args.check:
+        bad = stale(*paths)
+        for path in bad:
+            print(f"stale: {path} (run `agentmemeval readme` and commit the result)")
+        if not bad:
+            print(f"README headline matches {args.summary}")
+        return 1 if bad else 0
+    for path in write(*paths):
+        print(f"wrote {path}")
+    return 0
+
+
 def cmd_live_init(args: argparse.Namespace) -> int:
     from agentmemeval.live import init_session
 
@@ -318,6 +334,17 @@ def build_parser() -> argparse.ArgumentParser:
     pub.add_argument("--session", required=True, help="session directory, e.g. runs/live-v1")
     pub.add_argument("--out", required=True, help="output directory, e.g. results/live-v1")
     pub.set_defaults(func=cmd_publish)
+
+    readme = sub.add_parser(
+        "readme", help="regenerate the README results table and figure from a summary.json"
+    )
+    readme.add_argument("--summary", default="results/live-v1/summary.json")
+    readme.add_argument("--readme", default="README.md")
+    readme.add_argument("--figure", default="docs/img/live-v1-accuracy.svg")
+    readme.add_argument(
+        "--check", action="store_true", help="exit 1 if the committed files are stale"
+    )
+    readme.set_defaults(func=cmd_readme)
 
     usage = sub.add_parser("usage", help="show paid calls and cost from a usage ledger")
     usage.add_argument("--ledger", required=True, help="e.g. runs/live-v1/usage.jsonl")
