@@ -78,7 +78,7 @@ uv run agentmemeval demo --open    # 离线 demo，1 秒左右跑完，并在浏
 **更多命令：**
 
 ```powershell
-uv run pytest                      # 框架自测 + Agent 层 9 个维度，全部离线
+uv run pytest                      # 框架自测 + Agent 层 9 个维度，全部离线（live 适配器的测试需 uv sync --extra live，否则注明原因跳过）
 uv run pytest --alluredir=reports/allure-results   # 同上，并输出 Allure 结果
 uv run agentmemeval agent-eval     # Agent 批量评测：交付率、路由混淆矩阵、耗时拆解
 uv run pytest tests/eval           # 记忆层逐题评测（测量用，答错的题会失败）
